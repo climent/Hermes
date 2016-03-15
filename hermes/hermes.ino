@@ -1,16 +1,33 @@
 /*
- * Hermes LED shoes
- * Copyright 2013-2014 RGAM LLC
- *
- */
+  Hermes LED shoes
+  Copyright 2013-2014 RGAM LLC
+
+*/
+
+/* Constants */
+
+const uint8_t KEYFRAMES[]  = {
+  // Rising
+  22, 22, 22, 24, 26, 28, 31, 34, 38, 41, 45, 50, 55, 60, 66, 73, 80, 87, 95,
+  103, 112, 121, 131, 141, 151,
+  //161, 172, 182, 192, 202, 211, 220, 228, 236, 242, 247, 251, 254, 255,
+
+  // Falling
+  //254, 251, 247, 242, 236, 228, 220, 211, 202, 192, 182, 172,
+  161, 151, 141,
+  131, 121, 112, 103, 95, 87, 80, 73, 66, 60, 55, 50, 45, 41, 38, 34, 31, 28,
+  26, 24, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
+  22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
+  22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
+  22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
+};
 
 /* Run parameters: */
-#define MAX_BRIGHTNESS 0.65 // Max LED brightness.
+#define MAX_BRIGHTNESS 0.75 // Max LED brightness.
 #define MIN_BRIGHTNESS 0.3
-#define WAIT_FOR_KEYBOARD 0 // Use keyboard to pause/resume program.
 
 /* Neopixel parameters: */
-#define LED_COUNT 98
+#define LED_COUNT 144
 #define DATA_PIN 6
 
 /* Animation parameters: */
@@ -26,19 +43,23 @@
 // middle of the strip and crawling both ways.
 #define ENABLE_SPLIT_STRIP 1
 // Center LED, aka LED #0.
-#define SPLIT_STRIP_CENTER 83
+#define SPLIT_STRIP_CENTER 72
 
 /* Sleeping parameters: */
 #define SLEEP_BRIGHTNESS 0.30
-#define SLEEP_CYCLE_MS 5000 // 5 second breathing cycle.
-#define SLEEP_WAIT_TIME_MS 5000 // No movement for 5 seconds triggers breathing.
-#define SLEEP_SENSITIVITY 25
+#define SLEEP_CYCLE_MS 5000 // 5 second breathing cycle. Default: 5000
+#define SLEEP_WAIT_TIME_MS 100 // No movement for 5 seconds triggers breathing. Default: 5000
+#define SLEEP_SENSITIVITY 40
 
 /* Debug parameters: */
+#define WAIT_FOR_KEYBOARD 0 // Use keyboard to pause/resume program.
 #define PRINT_LOOP_TIME 0
+#define PRINT_ACCEL_DATA 0
+#define PRINT_SLEEP_TIME 0
 
 /* Advanced: */
 #define ONBOARD_LED_PIN 7 // Pin D7 has an LED connected on FLORA.
+#define ONBOARD_LED_NEOPIX 8 // Pin D8 has an LED connected on FLORA.
 
 ///////////////////////////////////////////////////////////////////
 
@@ -52,6 +73,8 @@
 // Our custom data type.
 #include "AccelReading.h"
 
+Adafruit_NeoPixel onboard_strip = Adafruit_NeoPixel(1, ONBOARD_LED_NEOPIX, NEO_GRB + NEO_KHZ800);
+
 void setup() {
   if (WAIT_FOR_KEYBOARD) {
     Serial.begin(9600);
@@ -59,27 +82,69 @@ void setup() {
     // Wait for serial to initalize.
     while (!Serial) { }
 
-  	Serial.println("Strike any key to start...");
+    Serial.println("Strike any key to start...");
 
-  	// Wait for the next keystroke.
-  	while (!Serial.available()) { }
+    // Wait for the next keystroke.
+    while (!Serial.available()) { }
 
-  	// Clear the serial buffer.
+    // Clear the serial buffer.
     Serial.read();
+
+    Serial.println("Ready to roll!");
   }
-  
+  // Let's signal when we are ready to configure the board.
+
+  onboard_strip.begin();
+  onboard_strip.show();
+
+  if (WAIT_FOR_KEYBOARD) {
+    Serial.println("Strip is ready.");
+  }
+
+  colorWipe(onboard_strip.Color(255, 0, 0), 300); // Red
+
   checkSuperfastHack();
-  
+
+  colorWipe(onboard_strip.Color(0, 255, 0), 300); // Green
+
   colorSetup();
-  
+
+  if (WAIT_FOR_KEYBOARD) {
+    Serial.println("Color setup done.");
+  }
+
+  colorWipe(onboard_strip.Color(0, 0, 255), 300); // Blue
+
   accelSetup();
+
+  if (WAIT_FOR_KEYBOARD) {
+    Serial.println("Acceleration done.");
+  }
+
+  colorWipe(onboard_strip.Color(255, 255, 255), 1000); // White
+  colorWipe(onboard_strip.Color(255, 0, 0), 100); // Red
+  colorWipe(onboard_strip.Color(0, 0, 0), 100); // Black
+  colorWipe(onboard_strip.Color(0, 255, 0), 100); // Green
+  colorWipe(onboard_strip.Color(0, 0, 0), 100); // Black
+  colorWipe(onboard_strip.Color(255, 0, 0), 100); // Red
+  colorWipe(onboard_strip.Color(0, 0, 0), 100); // Black
+  colorWipe(onboard_strip.Color(0, 255, 0), 100); // Green
+  colorWipe(onboard_strip.Color(0, 0, 0), 100); // Red
 }
 
 void loop() {
   loopDebug();
-
   accelPoll();
   updateLED();
+}
+
+// Fill the dots one after the other with a color
+void colorWipe(uint32_t c, uint8_t wait) {
+  for (uint16_t i = 0; i < onboard_strip.numPixels(); i++) {
+    onboard_strip.setPixelColor(i, c);
+    onboard_strip.show();
+    delay(wait);
+  }
 }
 
 // Debug functions controlled by run/debug parameters.
@@ -96,15 +161,15 @@ void loopDebug() {
 }
 
 void checkSuperfastHack() {
-  #if SUPERFAST_LED_HACK
-    #ifdef _COMPILE_TIME_LEDS_
-      Serial.println("Using superfast LED hack.");
-    #elif
-      // Wait for serial to initalize.
-      while (!Serial) { }
-      Serial.println("WARNING: You need to install the LPD8806Fast library.");
-    #endif
-  #endif
+#if SUPERFAST_LED_HACK
+#ifdef _COMPILE_TIME_LEDS_
+  Serial.println("Using superfast LED hack.");
+#elif
+  // Wait for serial to initalize.
+  while (!Serial) { }
+  Serial.println("WARNING: You need to install the LPD8806Fast library.");
+#endif
+#endif
 }
 
 void pauseOnKeystroke() {
@@ -146,10 +211,10 @@ unsigned long lastSignificantMovementTime;
 
 // Initialization.
 void accelSetup() {
-  Serial.println("BEGIN");
-  
+  //Serial.println("Initializing accel setup...");
+
   lsm.begin();
-  
+
   bufferPosition = 0;
 
   // Initialize the full buffer to zero.
@@ -158,15 +223,16 @@ void accelSetup() {
     accelBuffer[i].y = 0;
     accelBuffer[i].z = 0;
   }
-  
+
   calibrate();
 }
 
 void calibrate() {
+  Serial.println("Initializing accel calibration...");
   calibration = 0;
   calibrationLEDTime = 0;
   calibrationLEDOn = false;
-  
+
   showCalibration();
 
   while (1) {
@@ -177,13 +243,13 @@ void calibrate() {
       calibrationLEDOn = !calibrationLEDOn;
       digitalWrite(ONBOARD_LED_PIN, calibrationLEDOn ? HIGH : LOW);
     }
-    
+
     // Fill the buffer.
-    if(!fillBuffer()) {
+    if (!fillBuffer()) {
       delay(10);
       continue;
     }
-    
+
     // Check to see if we're done.
     bool pass = true;
     double avg = 0;
@@ -192,7 +258,7 @@ void calibrate() {
       pass = pass && (abs(m - calibration) < 10);
       avg += m;
     }
-    
+
     if (pass) {
       if (WAIT_FOR_KEYBOARD) {
         Serial.print("Calibration: ");
@@ -204,7 +270,7 @@ void calibrate() {
       calibration = avg;
     }
   }
-  
+
   // Turn the calibration light off.
   digitalWrite(ONBOARD_LED_PIN, LOW);
 }
@@ -216,7 +282,7 @@ void accelPoll() {
   if (!fillBuffer()) {
     return;
   }
-  
+
   /* PRINT DATA: */
   // printBuffer();
   // printDelta();
@@ -240,31 +306,31 @@ double getVector(AccelReading reading) {
 bool fillBuffer() {
   // Read from the hardware.
   lsm.read();
-  
+
   AccelReading newReading;
   newReading.x = lsm.accelData.x;
   newReading.y = lsm.accelData.y;
   newReading.z = lsm.accelData.z;
-  
+
   // The accelerometer hasn't processed a new reading since the last buffer.
   // Do nothing and return false.
   if (equalReadings(getCurrentReading(), newReading)) {
     return false;
   }
-  
+
   // The accelerometer has read new data.
-  
+
   // Advance the buffer.
   if (++bufferPosition >= bufferSize()) {
     bufferPosition = 0;
   }
 
   AccelReading *mutableCurrentReading = &accelBuffer[bufferPosition];
-  
+
   mutableCurrentReading->x = newReading.x;
   mutableCurrentReading->y = newReading.y;
   mutableCurrentReading->z = newReading.z;
-  
+
   return true;
 }
 
@@ -274,18 +340,18 @@ bool fillBuffer() {
 int getDelta() {
   AccelReading previousReading = getPreviousReading();
   AccelReading currentReading  = getCurrentReading();
-  
+
   int deltaX = abs(abs(currentReading.x) - abs(previousReading.x));
   int deltaY = abs(abs(currentReading.y) - abs(previousReading.y));
   int deltaZ = abs(abs(currentReading.z) - abs(previousReading.z));
-  
+
   return (deltaX + deltaY + deltaZ) / 3;
 }
 
 void printDelta() {
   AccelReading previousReading = getPreviousReading();
   AccelReading currentReading  = getCurrentReading();
-  
+
   int deltaX = abs(abs(currentReading.x) - abs(previousReading.x));
   int deltaY = abs(abs(currentReading.y) - abs(previousReading.y));
   int deltaZ = abs(abs(currentReading.z) - abs(previousReading.z));
@@ -361,11 +427,11 @@ Adafruit_NeoPixel strip = Adafruit_NeoPixel(LED_COUNT, DATA_PIN, NEO_GRB + NEO_K
 void colorSetup() {
   lastColor = 0;
   lastCrawl = 0;
-  
+
   // Turn the strip on.
   strip.begin();
   stripShow();
-  
+
   // Initialize the LED buffer.
   for (int i = 0; i < LED_COUNT; i++) {
     lightArray[i] = 0;
@@ -379,15 +445,39 @@ void updateLED() {
   double upperBound = HERMES_SENSITIVITY;
   double normalizedVector = abs(calibration - getMagnitude(getCurrentReading()));
   double scale = normalizedVector / upperBound;
+
+  String accel_data = "#";
+  
+  if (PRINT_ACCEL_DATA) {
+    for (int n = 1; n < scale*100/1.5 ; n++) {
+      accel_data += "#";
+    }
+    Serial.println(accel_data);
+  }
   
   uint32_t pixelColor = pixelColorForScale(scale);
-  
+
   // Change LED strip color.
   //showColor(scale);
-  
+  //crawlColor(pixelColor);
+  //Serial.println("We are ready...");
   if (sleep()) {
-    breathe(strip);
+    int keyframePointer = 0;
+    int numKeyframes = sizeof(KEYFRAMES) - 1;
+
+    for (int keyframePointer = 0; keyframePointer < numKeyframes; keyframePointer++) {
+      for (int i = 0; i < strip.numPixels(); i++) {
+        uint8_t color = (SLEEP_BRIGHTNESS * 127 * KEYFRAMES[keyframePointer]) / 256;
+        strip.setPixelColor(i, strip.Color(color, 0, 0));
+      }
+      stripShow();
+    }
+    //    breathe(strip);
+    //Serial.println("We are breathing... now!");
+    //Serial.println(millis());
   } else {
+    //Serial.println("Not sleeping...");
+    //Serial.println(millis());
     crawlColor(pixelColor);
   }
 }
@@ -397,25 +487,25 @@ void updateLED() {
 // After CRAWL_SPEED_MS milliseconds,
 // we set LED[n + 1] = LED[n] for each LED.
 void crawlColor(uint32_t color) {
-  
+
   // Set the head pixel to the new color.
   uint32_t head = lightArray[0];
   lightArray[0] = color;
-  
+
   unsigned long now = millis();
-  
+
   // Shift the array if it's been long enough since last shifting,
   // or if a new color arrives.
-  bool shouldUpdate = 
-      (now - lastCrawl > CRAWL_SPEED_MS)
-      || (color != head);
+  bool shouldUpdate =
+    (now - lastCrawl > CRAWL_SPEED_MS)
+    || (color != head);
 
   if (!shouldUpdate) {
     return;
   }
 
   lastCrawl = now;
-  
+
   // Shift the array.
   for (int i = LED_COUNT - 1; i > 0; --i) {
     lightArray[i] = lightArray[i - 1];
@@ -424,24 +514,24 @@ void crawlColor(uint32_t color) {
   if (ENABLE_SPLIT_STRIP) {
     int centerLED = SPLIT_STRIP_CENTER;
     int LEDsPerSide = floor(LED_COUNT / 2);
-  
+
     // Crawl 'low' side (center down)
     uint32_t *pixelColor = lightArray;
     for (int led = centerLED - 1; led >= centerLED - 1 - LEDsPerSide; led--) {
       strip.setPixelColor(constrainBetween(led, 0, LED_COUNT - 1), *pixelColor++);
     }
-  
+
     // Crawl 'high' side (center up)
     pixelColor = lightArray;
     for (int led = centerLED; led < centerLED + LEDsPerSide; led++) {
       strip.setPixelColor(constrainBetween(led, 0, LED_COUNT - 1), *pixelColor++);
     }
-  
+
     stripShow();
-    
+
     return;
   }
-  
+
   for (int i = 0; i < LED_COUNT; i++) {
     strip.setPixelColor(i, lightArray[i]);
   }
@@ -471,7 +561,7 @@ void showColor(float scale) {
 
   // Serial.print("Show "); Serial.print(scale); Serial.println(c);
   for (int i = 0; i < LED_COUNT; i++) {
-   strip.setPixelColor(i, pixelColor);
+    strip.setPixelColor(i, pixelColor);
   }
   stripShow();
 }
@@ -496,7 +586,7 @@ void showColorProgression() {
     stripShow();
     delay(1);
   }
-  
+
   for (int i = 0; i < strip.numPixels(); i++) {
     strip.setPixelColor(i, 0);
   }
@@ -548,30 +638,30 @@ void showCalibration() {
 
   int mid = LED_COUNT / 2;
   float brightness = 0.3;
-  
+
   // Red
   strip.setPixelColor(mid - 1, strip.Color(127 * brightness, 0, 0));
   // Green
   strip.setPixelColor(mid, strip.Color(0, 127 * brightness, 0));
   // Blue
   strip.setPixelColor(mid + 1, strip.Color(0, 0, 127 * brightness));
-  
+
   stripShow();
 }
 
 void stripShow() {
-  #if SUPERFAST_LED_HACK
-    #ifdef _COMPILE_TIME_LEDS_
-      // These settings are for Leonardo (ATmega32u4) with
-      // LED pins data=6, clock=12.
-      // See CompileTimeLEDs.h for more info.
-      strip.showCompileTime<6, 7>(PORTD, PORTD);
-    #elif
-      // Can't actually use superfast hack, it isn't installed properly.
-      strip.show();
-    #endif
-    return;
-  #endif
+#if SUPERFAST_LED_HACK
+#ifdef _COMPILE_TIME_LEDS_
+  // These settings are for Leonardo (ATmega32u4) with
+  // LED pins data=6, clock=12.
+  // See CompileTimeLEDs.h for more info.
+  strip.showCompileTime<6, 7>(PORTD, PORTD);
+#elif
+  // Can't actually use superfast hack, it isn't installed properly.
+  strip.show();
+#endif
+  return;
+#endif
 
   strip.show();
 }
@@ -593,41 +683,34 @@ bool sleep() {
   if (abs(calibration - m) > SLEEP_SENSITIVITY) {
     lastSignificantMovementTime = now;
   }
-  
+
   // Last significant movement time needs to be longer than sleep wait time.
   if (now - lastSignificantMovementTime < SLEEP_WAIT_TIME_MS) {
     // Haven't waited long enough.
+    if (PRINT_SLEEP_TIME) {
+      Serial.println(now - lastSignificantMovementTime);
+    }
     resetBreathe();
     sleeping = false;
     return false;
   }
-  
+
   // Only start sleeping on the sleep period.
   if (!sleeping && (now % SLEEP_CYCLE_MS != 0)) {
     resetBreathe();
+    if (PRINT_SLEEP_TIME) {
+      Serial.println(now % SLEEP_CYCLE_MS);
+    }
     sleeping = false;
     return false;
   }
-  
-  sleeping = true;
 
+  Serial.println("Entering sleep...");
+  sleeping = true;
   return true;
 }
 
 ///////////////////////////////////////////////////////////////////
-
-const uint8_t KEYFRAMES[]  = {
-  // Rising
-  20, 21, 22, 24, 26, 28, 31, 34, 38, 41, 45, 50, 55, 60, 66, 73, 80, 87, 95,
-  103, 112, 121, 131, 141, 151, 161, 172, 182, 192, 202, 211, 220, 228, 236,
-  242, 247, 251, 254, 255,
-
-  // Falling
-  254, 251, 247, 242, 236, 228, 220, 211, 202, 192, 182, 172, 161, 151, 141,
-  131, 121, 112, 103, 95, 87, 80, 73, 66, 60, 55, 50, 45, 41, 38, 34, 31, 28,
-  26, 24, 22, 21, 20,
-  20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 
-};
 
 unsigned long lastBreath = 0.0;
 int keyframePointer = 0;
@@ -640,20 +723,18 @@ void breathe(Adafruit_NeoPixel strip) {
   int numKeyframes = sizeof(KEYFRAMES) - 1;
   float period = SLEEP_CYCLE_MS / numKeyframes;
   unsigned long now = millis();
-  
+
   if ((now - lastBreath) > period) {
     lastBreath = now;
 
-    for (int i = 0; i < strip.numPixels(); i++) {
-      uint8_t color = (SLEEP_BRIGHTNESS * 127 * KEYFRAMES[keyframePointer]) / 256;
-      strip.setPixelColor(i, color, 0, 0);
+    for (int keyframePointer = 0; keyframePointer < numKeyframes; keyframePointer++) {
+      for (int i = 0; i < strip.numPixels(); i++) {
+        uint8_t color = (SLEEP_BRIGHTNESS * 127 * KEYFRAMES[keyframePointer]) / 256;
+        strip.setPixelColor(i, strip.Color(color, 0, 0));
+        Serial.println(color);
+      }
+      stripShow();
+      Serial.println(keyframePointer);
     }
-    strip.show();   
-
-    // Increment the keyframe pointer.
-    if (++keyframePointer > numKeyframes) {
-      // Reset to 0 after the last keyframe.
-      keyframePointer = 0;
-    }   
   }
 }
