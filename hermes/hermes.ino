@@ -1,22 +1,18 @@
 /*
-  Hermes LED shoes
-  Copyright 2013-2014 RGAM LLC
-
+   Hermes LED shoes
+   Copyright 2013-2014 RGAM LLC
 */
 
 /* Constants */
 
 const uint8_t KEYFRAMES[]  = {
   // Rising
-  22, 22, 22, 24, 26, 28, 31, 34, 38, 41, 45, 50, 55, 60, 66, 73, 80, 87, 95,
-  103, 112, 121, 131, 141, 151,
-  //161, 172, 182, 192, 202, 211, 220, 228, 236, 242, 247, 251, 254, 255,
+  22, 22, 22, 22, 22, 22, 22, 22, 24, 26, 28, 31, 34, 38, 41, 45, 50, 55, 60,
+  66, 73, 80, 87, 95, 103, 112, 121, 131, 141, 151,
 
   // Falling
-  //254, 251, 247, 242, 236, 228, 220, 211, 202, 192, 182, 172,
-  161, 151, 141,
-  131, 121, 112, 103, 95, 87, 80, 73, 66, 60, 55, 50, 45, 41, 38, 34, 31, 28,
-  26, 24, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
+  161, 151, 141, 131, 121, 112, 103, 95, 87, 80, 73, 66, 60, 55, 50, 45, 41, 
+  38, 34, 31, 28, 26, 24, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 
   22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
   22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
   22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
@@ -39,6 +35,7 @@ const uint8_t KEYFRAMES[]  = {
 // and thus lowers sensitivity.
 // Eg: 800 = more sensitive, 1600 = less sensitive
 #define HERMES_SENSITIVITY 1600.0
+
 // Emulate two strips by starting the crawl in the
 // middle of the strip and crawling both ways.
 #define ENABLE_SPLIT_STRIP 1
@@ -448,14 +445,14 @@ void updateLED() {
   double scale = normalizedVector / upperBound;
 
   String accel_data = "#";
-  
+
   if (PRINT_ACCEL_DATA) {
-    for (int n = 1; n < scale*100/1.5 ; n++) {
+    for (int n = 1; n < scale * 100 / 1.5 ; n++) {
       accel_data += "#";
     }
     Serial.println(accel_data);
   }
-  
+
   uint32_t pixelColor = pixelColorForScale(scale);
 
   // Change LED strip color.
@@ -676,57 +673,47 @@ void stripShow() {
 ///////////
 bool sleeping = false;
 bool waiting = false;
+int repeats = 0;
 
 bool sleep() {
   unsigned long now = millis();
 
   // See if this movement is significant, aka enough to wake us from sleep.
   double m = getMagnitude(getCurrentReading());
+
   if (abs(calibration - m) > SLEEP_SENSITIVITY) {
     lastSignificantMovementTime = now;
     waiting = false;
-    if (PRINT_SLEEP_SENS) {
+    repeats += 1;
+    // Print only 1 every 4 cycles, to avoid overflowing the console.
+    if (PRINT_SLEEP_SENS && (repeats % 4 == 0)) {
       Serial.println(abs(calibration - m));
     }
+    sleeping = false;
+    return false;
   } else {
     if (PRINT_SLEEP_SENS) {
       if (!waiting) {
         Serial.println("Waiting to sleep...");
       }
     }
+    // Last significant movement time needs to be longer than sleep wait time.
+    if ((now - lastSignificantMovementTime) < SLEEP_WAIT_TIME_MS) {
+      // Haven't waited long enough.
+      if (PRINT_SLEEP_TIME) {
+        Serial.println(" wait period > " + String(now - lastSignificantMovementTime) + " / " + String(SLEEP_WAIT_TIME_MS));
+        //Serial.println(SLEEP_WAIT_TIME_MS);
+      }
+      sleeping = false;
+      return false;
+    } else {
+      Serial.println("We are sleeping...");
+      sleeping = true;
+      return true;    
+    }
     waiting = true;
   }
 
-  // Last significant movement time needs to be longer than sleep wait time.
-  if (PRINT_SLEEP_TIME) {
-    Serial.println(" wait period > " + String(now - lastSignificantMovementTime) + " / " + String(SLEEP_WAIT_TIME_MS));
-    //Serial.println(SLEEP_WAIT_TIME_MS);
-  }
-
-  if ((now - lastSignificantMovementTime) < SLEEP_WAIT_TIME_MS) {
-    // Haven't waited long enough.
-    if (PRINT_SLEEP_TIME) {
-      Serial.println(" wait period > " + String(now - lastSignificantMovementTime) + " / " + String(SLEEP_WAIT_TIME_MS));
-      //Serial.println(SLEEP_WAIT_TIME_MS);
-    }
-    //resetBreathe();
-    sleeping = false;
-    return false;
-  }
-
-  // Only start sleeping on the sleep period.
-  //if (!sleeping && (now % SLEEP_CYCLE_MS != 0)) {
-    //resetBreathe();
-  //  if (PRINT_SLEEP_TIME) {
-  //    Serial.println(" sleep period > " + String(now % SLEEP_CYCLE_MS));
-  //  }
-  //  sleeping = false;
-  //  return false;
-  //}
-
-  Serial.println("Entering sleep...");
-  sleeping = true;
-  return true;
 }
 
 ///////////////////////////////////////////////////////////////////
