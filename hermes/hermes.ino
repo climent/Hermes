@@ -48,14 +48,15 @@ const uint8_t KEYFRAMES[]  = {
 /* Sleeping parameters: */
 #define SLEEP_BRIGHTNESS 0.30
 #define SLEEP_CYCLE_MS 5000 // 5 second breathing cycle. Default: 5000
-#define SLEEP_WAIT_TIME_MS 100 // No movement for 5 seconds triggers breathing. Default: 5000
-#define SLEEP_SENSITIVITY 40
+#define SLEEP_WAIT_TIME_MS 4000 // No movement for 5 seconds triggers breathing. Default: 5000
+#define SLEEP_SENSITIVITY 100
 
 /* Debug parameters: */
-#define WAIT_FOR_KEYBOARD 0 // Use keyboard to pause/resume program.
+#define WAIT_FOR_KEYBOARD 1 // Use keyboard to pause/resume program.
 #define PRINT_LOOP_TIME 0
 #define PRINT_ACCEL_DATA 0
-#define PRINT_SLEEP_TIME 0
+#define PRINT_SLEEP_TIME 1
+#define PRINT_SLEEP_SENS 1
 
 /* Advanced: */
 #define ONBOARD_LED_PIN 7 // Pin D7 has an LED connected on FLORA.
@@ -674,6 +675,7 @@ void stripShow() {
 // sleep //
 ///////////
 bool sleeping = false;
+bool waiting = false;
 
 bool sleep() {
   unsigned long now = millis();
@@ -682,28 +684,45 @@ bool sleep() {
   double m = getMagnitude(getCurrentReading());
   if (abs(calibration - m) > SLEEP_SENSITIVITY) {
     lastSignificantMovementTime = now;
+    waiting = false;
+    if (PRINT_SLEEP_SENS) {
+      Serial.println(abs(calibration - m));
+    }
+  } else {
+    if (PRINT_SLEEP_SENS) {
+      if (!waiting) {
+        Serial.println("Waiting to sleep...");
+      }
+    }
+    waiting = true;
   }
 
   // Last significant movement time needs to be longer than sleep wait time.
-  if (now - lastSignificantMovementTime < SLEEP_WAIT_TIME_MS) {
+  if (PRINT_SLEEP_TIME) {
+    Serial.println(" wait period > " + String(now - lastSignificantMovementTime) + " / " + String(SLEEP_WAIT_TIME_MS));
+    //Serial.println(SLEEP_WAIT_TIME_MS);
+  }
+
+  if ((now - lastSignificantMovementTime) < SLEEP_WAIT_TIME_MS) {
     // Haven't waited long enough.
     if (PRINT_SLEEP_TIME) {
-      Serial.println(now - lastSignificantMovementTime);
+      Serial.println(" wait period > " + String(now - lastSignificantMovementTime) + " / " + String(SLEEP_WAIT_TIME_MS));
+      //Serial.println(SLEEP_WAIT_TIME_MS);
     }
-    resetBreathe();
+    //resetBreathe();
     sleeping = false;
     return false;
   }
 
   // Only start sleeping on the sleep period.
-  if (!sleeping && (now % SLEEP_CYCLE_MS != 0)) {
-    resetBreathe();
-    if (PRINT_SLEEP_TIME) {
-      Serial.println(now % SLEEP_CYCLE_MS);
-    }
-    sleeping = false;
-    return false;
-  }
+  //if (!sleeping && (now % SLEEP_CYCLE_MS != 0)) {
+    //resetBreathe();
+  //  if (PRINT_SLEEP_TIME) {
+  //    Serial.println(" sleep period > " + String(now % SLEEP_CYCLE_MS));
+  //  }
+  //  sleeping = false;
+  //  return false;
+  //}
 
   Serial.println("Entering sleep...");
   sleeping = true;
@@ -711,30 +730,3 @@ bool sleep() {
 }
 
 ///////////////////////////////////////////////////////////////////
-
-unsigned long lastBreath = 0.0;
-int keyframePointer = 0;
-
-void resetBreathe() {
-  keyframePointer = 0;
-}
-
-void breathe(Adafruit_NeoPixel strip) {
-  int numKeyframes = sizeof(KEYFRAMES) - 1;
-  float period = SLEEP_CYCLE_MS / numKeyframes;
-  unsigned long now = millis();
-
-  if ((now - lastBreath) > period) {
-    lastBreath = now;
-
-    for (int keyframePointer = 0; keyframePointer < numKeyframes; keyframePointer++) {
-      for (int i = 0; i < strip.numPixels(); i++) {
-        uint8_t color = (SLEEP_BRIGHTNESS * 127 * KEYFRAMES[keyframePointer]) / 256;
-        strip.setPixelColor(i, strip.Color(color, 0, 0));
-        Serial.println(color);
-      }
-      stripShow();
-      Serial.println(keyframePointer);
-    }
-  }
-}
