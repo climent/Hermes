@@ -7,12 +7,14 @@
 
 const uint8_t KEYFRAMES[]  = {
   // Rising
-  22, 22, 22, 22, 22, 22, 22, 22, 24, 26, 28, 31, 34, 38, 41, 45, 50, 55, 60,
-  66, 73, 80, 87, 95, 103, 112, 121, 131, 141, 151,
+  22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
+  22, 22, 22, 22, 22, 22, 22, 22, 24, 26, 28, 31, 34, 37, 40, 42, 46, 50, 55, 60,
+  65, 70, 75, 80, 85, 90, 95, 100, 105, 112, 121, 131, 141, 151, 161, 171, 171,
 
   // Falling
-  161, 151, 141, 131, 121, 112, 103, 95, 87, 80, 73, 66, 60, 55, 50, 45, 41, 
-  38, 34, 31, 28, 26, 24, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 
+  161, 151, 141, 131, 121, 112, 105, 100, 95, 90, 85, 80, 75, 70, 65, 60, 55, 50, 45, 42, 40,
+  37, 34, 31, 28, 26, 24, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 
+  22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
   22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
   22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
   22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
@@ -49,11 +51,11 @@ const uint8_t KEYFRAMES[]  = {
 #define SLEEP_SENSITIVITY 100
 
 /* Debug parameters: */
-#define WAIT_FOR_KEYBOARD 1 // Use keyboard to pause/resume program.
+#define WAIT_FOR_KEYBOARD 0 // Use keyboard to pause/resume program.
 #define PRINT_LOOP_TIME 0
 #define PRINT_ACCEL_DATA 0
-#define PRINT_SLEEP_TIME 1
-#define PRINT_SLEEP_SENS 1
+#define PRINT_SLEEP_TIME 0
+#define PRINT_SLEEP_SENS 0
 
 /* Advanced: */
 #define ONBOARD_LED_PIN 7 // Pin D7 has an LED connected on FLORA.
@@ -90,8 +92,8 @@ void setup() {
 
     Serial.println("Ready to roll!");
   }
-  // Let's signal when we are ready to configure the board.
 
+  // Let's signal when we are ready to configure the board.
   onboard_strip.begin();
   onboard_strip.show();
 
@@ -99,18 +101,12 @@ void setup() {
     Serial.println("Strip is ready.");
   }
 
-  colorWipe(onboard_strip.Color(255, 0, 0), 300); // Red
+  // During the setup process, signal where we are with colors:
+  // Blue: waiting for the accelerator to calibrate. 
 
   checkSuperfastHack();
-
-  colorWipe(onboard_strip.Color(0, 255, 0), 300); // Green
-
   colorSetup();
-
-  if (WAIT_FOR_KEYBOARD) {
-    Serial.println("Color setup done.");
-  }
-
+  
   colorWipe(onboard_strip.Color(0, 0, 255), 300); // Blue
 
   accelSetup();
@@ -119,7 +115,8 @@ void setup() {
     Serial.println("Acceleration done.");
   }
 
-  colorWipe(onboard_strip.Color(255, 255, 255), 1000); // White
+  // Blinky when we are done.
+  colorWipe(onboard_strip.Color(255, 255, 255), 500); // White
   colorWipe(onboard_strip.Color(255, 0, 0), 100); // Red
   colorWipe(onboard_strip.Color(0, 0, 0), 100); // Black
   colorWipe(onboard_strip.Color(0, 255, 0), 100); // Green
@@ -128,13 +125,30 @@ void setup() {
   colorWipe(onboard_strip.Color(0, 0, 0), 100); // Black
   colorWipe(onboard_strip.Color(0, 255, 0), 100); // Green
   colorWipe(onboard_strip.Color(0, 0, 0), 100); // Red
+  //pinMode(9, INPUT_PULLUP);
 }
 
+
+// Main loop
 void loop() {
+  // This code can be used to add a button to the board and have a change in behavior
+  // E.g., start doing a light loop
+  // E.g., put the board in sleep mode and stop polling until the button is pressed again
+  //if (digitalRead(9) == LOW)
+  //{
+  //  Serial.println("Pressed");
+  //}
   loopDebug();
   accelPoll();
   updateLED();
 }
+
+
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
 
 // Fill the dots one after the other with a color
 void colorWipe(uint32_t c, uint8_t wait) {
@@ -436,6 +450,16 @@ void colorSetup() {
   }
 }
 
+void printAccelData(double scale) {
+  if (PRINT_ACCEL_DATA) {
+    String accel_data = "#";
+    for (int n = 1; n < scale * 100 / 1.5 ; n++) {
+      accel_data += "#";
+    }
+    Serial.println(accel_data);
+  }
+}
+
 void updateLED() {
   // LED color takes a value from 0.0 to 1.0. Calculate scale from the current vector.
 
@@ -443,39 +467,15 @@ void updateLED() {
   double upperBound = HERMES_SENSITIVITY;
   double normalizedVector = abs(calibration - getMagnitude(getCurrentReading()));
   double scale = normalizedVector / upperBound;
-
-  String accel_data = "#";
-
-  if (PRINT_ACCEL_DATA) {
-    for (int n = 1; n < scale * 100 / 1.5 ; n++) {
-      accel_data += "#";
-    }
-    Serial.println(accel_data);
-  }
-
   uint32_t pixelColor = pixelColorForScale(scale);
 
-  // Change LED strip color.
-  //showColor(scale);
-  //crawlColor(pixelColor);
-  //Serial.println("We are ready...");
-  if (sleep()) {
-    int keyframePointer = 0;
-    int numKeyframes = sizeof(KEYFRAMES) - 1;
+  printAccelData(scale);
 
-    for (int keyframePointer = 0; keyframePointer < numKeyframes; keyframePointer++) {
-      for (int i = 0; i < strip.numPixels(); i++) {
-        uint8_t color = (SLEEP_BRIGHTNESS * 127 * KEYFRAMES[keyframePointer]) / 256;
-        strip.setPixelColor(i, strip.Color(color, 0, 0));
-      }
-      stripShow();
-    }
-    //    breathe(strip);
-    //Serial.println("We are breathing... now!");
-    //Serial.println(millis());
+  // Change LED strip color.
+  if (sleep()) {
+    breathe();
   } else {
-    //Serial.println("Not sleeping...");
-    //Serial.println(millis());
+    // Serial.println(pixelColor);
     crawlColor(pixelColor);
   }
 }
@@ -642,7 +642,7 @@ void showCalibration() {
   // Green
   strip.setPixelColor(mid, strip.Color(0, 127 * brightness, 0));
   // Blue
-  strip.setPixelColor(mid + 1, strip.Color(0, 0, 127 * brightness));
+  strip.setPixelColor(mid + 1, strip.Color(0, 0,  127 * brightness));
 
   stripShow();
 }
@@ -668,17 +668,57 @@ void stripShow() {
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
+/////////////
+// breathe //
+/////////////
+
+void breathe() {
+  int keyframePointer = 0;
+  int numKeyframes = sizeof(KEYFRAMES) - 1;
+
+  for (int keyframePointer = 0; keyframePointer < numKeyframes; keyframePointer++) {
+    for (int i = 0; i < strip.numPixels(); i++) {
+      uint8_t color = (SLEEP_BRIGHTNESS * 127 * KEYFRAMES[keyframePointer]) / 256;
+      strip.setPixelColor(i, strip.Color(color, 0, 0));
+    }
+    if (wakeup()) {
+      break;
+    }
+    stripShow();
+    delay(30);
+  }
+}
+
+////////////
+// wakeup //
+////////////
+
+bool wakeup() {
+  accelPoll();
+  double m = getMagnitude(getCurrentReading());
+  
+  if (abs(calibration - m) > SLEEP_SENSITIVITY) {
+    if (PRINT_SLEEP_SENS) {
+      Serial.println("Waking up...");
+    }
+    return true;
+  }
+  return false;
+}
+
 ///////////
 // sleep //
 ///////////
+
 bool sleeping = false;
 bool waiting = false;
-int repeats = 0;
 
 bool sleep() {
+  int repeats = 0;
   unsigned long now = millis();
 
   // See if this movement is significant, aka enough to wake us from sleep.
+  
   double m = getMagnitude(getCurrentReading());
 
   if (abs(calibration - m) > SLEEP_SENSITIVITY) {
@@ -690,6 +730,7 @@ bool sleep() {
       Serial.println(abs(calibration - m));
     }
     sleeping = false;
+    digitalWrite(ONBOARD_LED_PIN, sleeping ? HIGH : LOW);
     return false;
   } else {
     if (PRINT_SLEEP_SENS) {
@@ -705,10 +746,14 @@ bool sleep() {
         //Serial.println(SLEEP_WAIT_TIME_MS);
       }
       sleeping = false;
+      digitalWrite(ONBOARD_LED_PIN, sleeping ? HIGH : LOW);
       return false;
     } else {
-      Serial.println("We are sleeping...");
+      if (!sleeping && PRINT_SLEEP_SENS) {
+        Serial.println("We are now sleeping...");
+      }
       sleeping = true;
+      digitalWrite(ONBOARD_LED_PIN, sleeping ? HIGH : LOW);
       return true;    
     }
     waiting = true;
@@ -717,3 +762,5 @@ bool sleep() {
 }
 
 ///////////////////////////////////////////////////////////////////
+
+// double normalizedVector = abs(calibration - getMagnitude(getCurrentReading()));
