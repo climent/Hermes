@@ -8,12 +8,12 @@
 const uint8_t KEYFRAMES[]  = {
   // Rising
   22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
-  22, 22, 22, 22, 22, 22, 22, 22, 24, 26, 28, 31, 34, 37, 40, 42, 46, 50, 55, 60,
+  22, 22, 22, 22, 22, 22, 22, 24, 26, 28, 31, 34, 37, 40, 42, 46, 50, 55, 60,
   65, 70, 75, 80, 85, 90, 95, 100, 105, 112, 121, 131, 141, 151, 161, 171, 171,
 
   // Falling
-  161, 151, 141, 131, 121, 112, 105, 100, 95, 90, 85, 80, 75, 70, 65, 60, 55, 50, 45, 42, 40,
-  37, 34, 31, 28, 26, 24, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 
+  161, 151, 141, 131, 121, 112, 105, 100, 95, 90, 85, 80, 75, 70, 65, 60, 55,
+  50, 45, 42, 40, 37, 34, 31, 28, 26, 24, 22, 22, 22, 22, 22, 22, 22, 22, 22,
   22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
   22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
   22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
@@ -254,6 +254,11 @@ void calibrate() {
       calibrationLEDTime = now;
       calibrationLEDOn = !calibrationLEDOn;
       digitalWrite(ONBOARD_LED_PIN, calibrationLEDOn ? HIGH : LOW);
+      if (calibrationLEDOn) {
+        showCalibration();
+      } else {
+        showColorOff();
+      }
     }
 
     // Fill the buffer.
@@ -475,7 +480,9 @@ void updateLED() {
   if (sleep()) {
     breathe();
   } else {
-    // Serial.println(pixelColor);
+    //Serial.println(scale);
+    //Serial.println(pixelColor);
+    //showColorProgression();
     crawlColor(pixelColor);
   }
 }
@@ -720,7 +727,7 @@ bool sleep() {
   // See if this movement is significant, aka enough to wake us from sleep.
   
   double m = getMagnitude(getCurrentReading());
-
+  
   if (abs(calibration - m) > SLEEP_SENSITIVITY) {
     lastSignificantMovementTime = now;
     waiting = false;
