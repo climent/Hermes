@@ -74,6 +74,7 @@ const uint8_t KEYFRAMES[]  = {
 #include "AccelReading.h"
 
 Adafruit_NeoPixel onboard_strip = Adafruit_NeoPixel(1, ONBOARD_LED_NEOPIX, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(LED_COUNT, DATA_PIN, NEO_GRB + NEO_KHZ800);
 
 void setup() {
   if (WAIT_FOR_KEYBOARD) {
@@ -125,8 +126,10 @@ void setup() {
   colorWipe(onboard_strip.Color(0, 0, 0), 100); // Black
   colorWipe(onboard_strip.Color(0, 255, 0), 100); // Green
   colorWipe(onboard_strip.Color(0, 0, 0), 100); // Red
-  //pinMode(9, INPUT_PULLUP);
+  pinMode(9, INPUT_PULLUP);
 }
+
+bool keypressed = true;
 
 
 // Main loop
@@ -134,13 +137,33 @@ void loop() {
   // This code can be used to add a button to the board and have a change in behavior
   // E.g., start doing a light loop
   // E.g., put the board in sleep mode and stop polling until the button is pressed again
-  //if (digitalRead(9) == LOW)
-  //{
-  //  Serial.println("Pressed");
-  //}
-  loopDebug();
-  accelPoll();
-  updateLED();
+  //unsigned long now = millis();
+
+  //if (digitalRead(9) == LOW)  {
+  //  unsigned long pressed = millis();
+  //  if (now - pressed > 250){
+  //    keypressed = !keypressed;
+  //  }
+  //} 
+
+  //Serial.println(String(keypressed));
+
+  if (keypressed) {
+    loopDebug();
+    accelPoll();
+    updateLED();
+  //} else {
+  //  crawlColor(strip.Color(0, 0, 0));
+  //  if (millis() % 50 == 0) {
+  //    crawlColor(strip.Color(20, 20, 20));
+  //    crawlColor(strip.Color(0, 0, 0));
+  //    crawlColor(strip.Color(20, 20, 20));
+  //    crawlColor(strip.Color(0, 0, 0));
+  //    crawlColor(strip.Color(20, 20, 20));
+  //    crawlColor(strip.Color(0, 0, 0));
+  //    crawlColor(strip.Color(20, 20, 20));
+  //  }
+  }
 }
 
 
@@ -439,8 +462,6 @@ uint32_t lastColor;
 unsigned long lastCrawl;
 uint32_t lightArray[LED_COUNT];
 
-Adafruit_NeoPixel strip = Adafruit_NeoPixel(LED_COUNT, DATA_PIN, NEO_GRB + NEO_KHZ800);
-
 void colorSetup() {
   lastColor = 0;
   lastCrawl = 0;
@@ -485,6 +506,12 @@ void updateLED() {
     //showColorProgression();
     crawlColor(pixelColor);
   }
+}
+
+// decreases the colors of the strip, from the current value to the given value.
+// It uses final 
+
+void decreaseColor(uint32_t color) {
 }
 
 // "Crawls" the given color along the strip.
@@ -674,6 +701,24 @@ void stripShow() {
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
+
+//////////
+// rain //
+//////////
+
+void rain() {
+  crawlColor(strip.Color(0, 0, 0));
+  if (millis() % 50 == 0) {
+    //crawlColor(strip.Color(0, 0, 0));
+    crawlColor(strip.Color(20, 20, 20));
+    crawlColor(strip.Color(12, 12, 12));
+    crawlColor(strip.Color(7, 7, 7));
+    crawlColor(strip.Color(5, 5, 5));
+    crawlColor(strip.Color(2, 2, 2));
+    crawlColor(strip.Color(1, 1, 1));
+  }
+
+}
 
 /////////////
 // breathe //
