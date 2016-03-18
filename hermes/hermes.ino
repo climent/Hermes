@@ -6,23 +6,29 @@
 /* Constants */
 
 const uint8_t KEYFRAMES[]  = {
+  3, 3, 3, 3, 3, 4, 4 ,5 ,5 ,6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12,
+  13, 13, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22,
+  23, 23, 24, 24,
   // Rising
-  22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
-  22, 22, 22, 22, 22, 22, 22, 24, 26, 28, 31, 34, 37, 40, 42, 46, 50, 55, 60,
-  65, 70, 75, 80, 85, 90, 95, 100, 105, 112, 121, 131, 141, 151, 161, 171, 171,
+//  22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
+//  22, 22, 22, 22, 22, 22, 22, 24, 26, 28, 31, 34, 37, 40, 42, 46, 50, 55, 60,
+//  65, 70, 75, 80, 85, 90, 95, 100, 105, 112, 121, 131, 141, 151, 161, 171, 171,
 
   // Falling
-  161, 151, 141, 131, 121, 112, 105, 100, 95, 90, 85, 80, 75, 70, 65, 60, 55,
-  50, 45, 42, 40, 37, 34, 31, 28, 26, 24, 22, 22, 22, 22, 22, 22, 22, 22, 22,
-  22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
-  22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
-  22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
-  22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
+//  161, 151, 141, 131, 121, 112, 105, 100, 95, 90, 85, 80, 75, 70, 65, 60, 55,
+//  50, 45, 42, 40, 37, 34, 31, 28, 26, 24, 22, 22, 22, 22, 22, 22, 22, 22, 22,
+//  22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
+//  22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
+//  22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
+//  22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
 };
 
 /* Run parameters: */
 #define MAX_BRIGHTNESS 0.75 // Max LED brightness.
 #define MIN_BRIGHTNESS 0.3
+
+/* Rain parameters */
+#define RAIN_BRIGHTNESS 0.5
 
 /* Neopixel parameters: */
 #define LED_COUNT 144
@@ -61,6 +67,9 @@ const uint8_t KEYFRAMES[]  = {
 #define ONBOARD_LED_PIN 7 // Pin D7 has an LED connected on FLORA.
 #define ONBOARD_LED_NEOPIX 8 // Pin D8 has an LED connected on FLORA.
 
+/* The sleep mode to use: */
+#define SLEEP_MODE "breathe"
+
 ///////////////////////////////////////////////////////////////////
 
 // LED imports.
@@ -75,6 +84,7 @@ const uint8_t KEYFRAMES[]  = {
 
 Adafruit_NeoPixel onboard_strip = Adafruit_NeoPixel(1, ONBOARD_LED_NEOPIX, NEO_GRB + NEO_KHZ800);
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(LED_COUNT, DATA_PIN, NEO_GRB + NEO_KHZ800);
+
 
 void setup() {
   if (WAIT_FOR_KEYBOARD) {
@@ -107,7 +117,10 @@ void setup() {
 
   checkSuperfastHack();
   colorSetup();
-  
+
+  // set this to 128 to avoind the 144 led strip from hanging when testing
+  strip.setBrightness(128);
+
   colorWipe(onboard_strip.Color(0, 0, 255), 300); // Blue
 
   accelSetup();
@@ -148,10 +161,11 @@ void loop() {
 
   //Serial.println(String(keypressed));
 
-  if (keypressed) {
-    loopDebug();
-    accelPoll();
-    updateLED();
+  loopDebug();
+  accelPoll();
+  updateLED();
+  
+  //if (keypressed) {
   //} else {
   //  crawlColor(strip.Color(0, 0, 0));
   //  if (millis() % 50 == 0) {
@@ -163,7 +177,6 @@ void loop() {
   //    crawlColor(strip.Color(0, 0, 0));
   //    crawlColor(strip.Color(20, 20, 20));
   //  }
-  }
 }
 
 
@@ -461,6 +474,7 @@ int COLOR_RANGE = 384;
 uint32_t lastColor;
 unsigned long lastCrawl;
 uint32_t lightArray[LED_COUNT];
+bool goingToSleep = false;
 
 void colorSetup() {
   lastColor = 0;
@@ -498,8 +512,20 @@ void updateLED() {
   printAccelData(scale);
 
   // Change LED strip color.
+//  if (goingToSleep) {
+//    GoToSleep(color);
+//¨  }
   if (sleep()) {
-    breathe();
+    if (SLEEP_MODE == "breathe") {
+      decreaseColor();
+      breathe();
+    } else if (SLEEP_MODE == "rain") {
+      decreaseColor();
+      rain();
+    } else {
+      decreaseColor();
+      breathe();
+    }
   } else {
     //Serial.println(scale);
     //Serial.println(pixelColor);
@@ -511,7 +537,42 @@ void updateLED() {
 // decreases the colors of the strip, from the current value to the given value.
 // It uses final 
 
-void decreaseColor(uint32_t color) {
+void decreaseColor() {
+  while (1) {
+    bool timeToGo = true;
+    Serial.println("Decreasing colors...");
+    for (int i = 0; i < strip.numPixels(); i++) {
+      uint8_t *p,
+      r = (uint8_t)(lightArray[i] >> 16),
+      g = (uint8_t)(lightArray[i] >>  8),
+      b = (uint8_t)lightArray[i];
+      if (r > 3) {
+        r -= 1;
+        Serial.println("Drecreasing red");
+        timeToGo = false;
+      }
+      if (g > 3) {
+        g -= 1;
+        Serial.println("Drecreasing green");
+        timeToGo = false;
+      }
+      if (b > 3) {
+        b -= 1;
+        Serial.println("Drecreasing blue");
+        timeToGo = false;
+      }
+      if (timeToGo) {
+        return;
+      }
+      lightArray[i] = strip.Color(r, g, b);
+      strip.setPixelColor(i, lightArray[i]);
+    }
+    stripShow();
+    //delay(500);
+    if (wakeup()){
+      return;
+    }
+  }  
 }
 
 // "Crawls" the given color along the strip.
@@ -711,9 +772,12 @@ void rain() {
   if (millis() % 50 == 0) {
     //crawlColor(strip.Color(0, 0, 0));
     crawlColor(strip.Color(20, 20, 20));
+    crawlColor(strip.Color(18, 18, 18));
     crawlColor(strip.Color(12, 12, 12));
+    crawlColor(strip.Color(10, 10, 10));
     crawlColor(strip.Color(7, 7, 7));
-    crawlColor(strip.Color(5, 5, 5));
+    crawlColor(strip.Color(6, 6, 6));
+    crawlColor(strip.Color(4, 4, 4));
     crawlColor(strip.Color(2, 2, 2));
     crawlColor(strip.Color(1, 1, 1));
   }
@@ -730,15 +794,18 @@ void breathe() {
 
   for (int keyframePointer = 0; keyframePointer < numKeyframes; keyframePointer++) {
     for (int i = 0; i < strip.numPixels(); i++) {
-      uint8_t color = (SLEEP_BRIGHTNESS * 127 * KEYFRAMES[keyframePointer]) / 256;
+      uint8_t color = KEYFRAMES[keyframePointer];
+      //(SLEEP_BRIGHTNESS * 127 * KEYFRAMES[keyframePointer]) / 256;
       strip.setPixelColor(i, strip.Color(color, 0, 0));
+      lightArray[i] = strip.Color(color, 0, 0);
     }
     if (wakeup()) {
       break;
     }
     stripShow();
-    delay(30);
+    delay(20);
   }
+  decreaseColor();
 }
 
 ////////////
