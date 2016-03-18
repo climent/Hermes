@@ -6,6 +6,9 @@
 /* Constants */
 
 const uint8_t KEYFRAMES[]  = {
+  3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
+  3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
+  3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
   3, 3, 3, 3, 3, 4, 4 ,5 ,5 ,6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12,
   13, 13, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22,
   23, 23, 24, 24,
@@ -67,8 +70,12 @@ const uint8_t KEYFRAMES[]  = {
 #define ONBOARD_LED_PIN 7 // Pin D7 has an LED connected on FLORA.
 #define ONBOARD_LED_NEOPIX 8 // Pin D8 has an LED connected on FLORA.
 
-/* The sleep mode to use: */
-#define SLEEP_MODE "breathe"
+/* Button parameters: */
+#define MAIN_BUTTON_PIN 10
+#define BUTTON_PIN 9
+/* Number of total animations: */
+#define NUMBER_OF_ANIMATIONS 3
+#define NUMBER_OF_SLEEP_ANIMATIONS 4
 
 ///////////////////////////////////////////////////////////////////
 
@@ -118,9 +125,6 @@ void setup() {
   checkSuperfastHack();
   colorSetup();
 
-  // set this to 128 to avoind the 144 led strip from hanging when testing
-  strip.setBrightness(128);
-
   colorWipe(onboard_strip.Color(0, 0, 255), 300); // Blue
 
   accelSetup();
@@ -139,44 +143,18 @@ void setup() {
   colorWipe(onboard_strip.Color(0, 0, 0), 100); // Black
   colorWipe(onboard_strip.Color(0, 255, 0), 100); // Green
   colorWipe(onboard_strip.Color(0, 0, 0), 100); // Red
-  pinMode(9, INPUT_PULLUP);
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
+  pinMode(MAIN_BUTTON_PIN, INPUT_PULLUP);
+
 }
-
-bool keypressed = true;
-
 
 // Main loop
 void loop() {
-  // This code can be used to add a button to the board and have a change in behavior
-  // E.g., start doing a light loop
-  // E.g., put the board in sleep mode and stop polling until the button is pressed again
-  //unsigned long now = millis();
-
-  //if (digitalRead(9) == LOW)  {
-  //  unsigned long pressed = millis();
-  //  if (now - pressed > 250){
-  //    keypressed = !keypressed;
-  //  }
-  //} 
-
-  //Serial.println(String(keypressed));
-
+  button();
+  mainButton();
   loopDebug();
   accelPoll();
   updateLED();
-  
-  //if (keypressed) {
-  //} else {
-  //  crawlColor(strip.Color(0, 0, 0));
-  //  if (millis() % 50 == 0) {
-  //    crawlColor(strip.Color(20, 20, 20));
-  //    crawlColor(strip.Color(0, 0, 0));
-  //    crawlColor(strip.Color(20, 20, 20));
-  //    crawlColor(strip.Color(0, 0, 0));
-  //    crawlColor(strip.Color(20, 20, 20));
-  //    crawlColor(strip.Color(0, 0, 0));
-  //    crawlColor(strip.Color(20, 20, 20));
-  //  }
 }
 
 
@@ -185,6 +163,76 @@ void loop() {
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
+
+////////////////
+// Mainbutton //
+////////////////
+
+bool oldMainButtonState = HIGH;
+int showMainButtonType = 1;
+
+void mainButton() {
+  // Get current button state.
+  bool newMainButtonState = digitalRead(MAIN_BUTTON_PIN);
+
+  // Check if state changed from high to low (button press).
+  if (newMainButtonState == LOW && oldMainButtonState == HIGH) {
+    // Short delay to debounce button.
+    delay(20);
+    // Check if button is still low after debounce.
+    newMainButtonState = digitalRead(MAIN_BUTTON_PIN);
+    if (newMainButtonState == LOW) {
+      showMainButtonType++;
+      for (int i = 0; i < 7; i++) {
+        showColorOff();
+        delay(100);
+        showCalibration();
+        delay(100);
+      }
+      if (showMainButtonType > NUMBER_OF_ANIMATIONS)
+        showMainButtonType=1;
+      //startShow(showType);
+    }
+  }
+
+  // Set the last button state to the old state.
+  oldMainButtonState = newMainButtonState;
+}
+
+////////////
+// button //
+////////////
+
+bool oldState = HIGH;
+int showType = 1;
+
+void button() {
+  // Get current button state.
+  bool newState = digitalRead(BUTTON_PIN);
+
+  // Check if state changed from high to low (button press).
+  if (newState == LOW && oldState == HIGH) {
+    // Short delay to debounce button.
+    delay(20);
+    // Check if button is still low after debounce.
+    newState = digitalRead(BUTTON_PIN);
+    if (newState == LOW) {
+      showType++;
+      for (int i = 0; i < 3; i++) {
+        showColorOff();
+        delay(100);
+        showCalibration();
+        delay(100);
+      }
+      if (showType > NUMBER_OF_SLEEP_ANIMATIONS)
+        showType=1;
+      //startShow(showType);
+    }
+  }
+
+  // Set the last button state to the old state.
+  oldState = newState;
+}
 
 // Fill the dots one after the other with a color
 void colorWipe(uint32_t c, uint8_t wait) {
@@ -500,6 +548,12 @@ void printAccelData(double scale) {
   }
 }
 
+void pintColorData() {
+  //Serial.println(scale);
+  //Serial.println(pixelColor);
+  //showColorProgression();  
+}
+
 void updateLED() {
   // LED color takes a value from 0.0 to 1.0. Calculate scale from the current vector.
 
@@ -512,25 +566,43 @@ void updateLED() {
   printAccelData(scale);
 
   // Change LED strip color.
-//  if (goingToSleep) {
-//    GoToSleep(color);
-//¨  }
   if (sleep()) {
-    if (SLEEP_MODE == "breathe") {
-      decreaseColor();
-      breathe();
-    } else if (SLEEP_MODE == "rain") {
-      decreaseColor();
-      rain();
-    } else {
-      decreaseColor();
-      breathe();
+    switch(showType) {
+      case 1:
+        decreaseColor();
+        breathe();
+        break;
+      case 2:
+        decreaseColor();
+        rain();
+        break;
+      case 3:
+        rotation();
+        break;
+      case 4:
+        rotationFullStrip();
+        break;
+      // In case we missed the animation, use this as default
+      default:
+        decreaseColor();
+        breathe();
+        break;
     }
   } else {
-    //Serial.println(scale);
-    //Serial.println(pixelColor);
-    //showColorProgression();
-    crawlColor(pixelColor);
+    switch(showMainButtonType){
+      case 1:
+        crawlColor(pixelColor);
+        break;
+      case 2:
+        crawlColorStrip(pixelColor);
+        break;
+      case 3:
+        showColorProgression();
+        break;
+      default:
+        crawlColor(pixelColor);
+        break;
+    }
   }
 }
 
@@ -540,7 +612,7 @@ void updateLED() {
 void decreaseColor() {
   while (1) {
     bool timeToGo = true;
-    Serial.println("Decreasing colors...");
+    //Serial.println("Decreasing colors...");
     for (int i = 0; i < strip.numPixels(); i++) {
       uint8_t *p,
       r = (uint8_t)(lightArray[i] >> 16),
@@ -548,17 +620,14 @@ void decreaseColor() {
       b = (uint8_t)lightArray[i];
       if (r > 3) {
         r -= 1;
-        Serial.println("Drecreasing red");
         timeToGo = false;
       }
       if (g > 3) {
         g -= 1;
-        Serial.println("Drecreasing green");
         timeToGo = false;
       }
       if (b > 3) {
         b -= 1;
-        Serial.println("Drecreasing blue");
         timeToGo = false;
       }
       if (timeToGo) {
@@ -568,11 +637,41 @@ void decreaseColor() {
       strip.setPixelColor(i, lightArray[i]);
     }
     stripShow();
-    //delay(500);
+    delay(20);
     if (wakeup()){
       return;
     }
   }  
+}
+
+void crawlColorStrip(uint32_t color) {
+  // Set the head pixel to the new color.
+  uint32_t head = lightArray[0];
+  lightArray[0] = color;
+
+  unsigned long now = millis();
+
+  // Shift the array if it's been long enough since last shifting,
+  // or if a new color arrives.
+  bool shouldUpdate =
+    (now - lastCrawl > CRAWL_SPEED_MS)
+    || (color != head);
+
+  if (!shouldUpdate) {
+    return;
+  }
+
+  lastCrawl = now;
+
+  // Shift the array.
+  for (int i = LED_COUNT - 1; i > 0; --i) {
+    lightArray[i] = lightArray[i - 1];
+  }
+
+  for (int i = 0; i < LED_COUNT; i++) {
+    strip.setPixelColor(i, lightArray[i]);
+  }
+  stripShow();
 }
 
 // "Crawls" the given color along the strip.
@@ -580,7 +679,6 @@ void decreaseColor() {
 // After CRAWL_SPEED_MS milliseconds,
 // we set LED[n + 1] = LED[n] for each LED.
 void crawlColor(uint32_t color) {
-
   // Set the head pixel to the new color.
   uint32_t head = lightArray[0];
   lightArray[0] = color;
@@ -678,8 +776,10 @@ void showColorProgression() {
     }
     stripShow();
     delay(1);
+    if (wakeup()) {
+      return;
+    }
   }
-
   for (int i = 0; i < strip.numPixels(); i++) {
     strip.setPixelColor(i, 0);
   }
@@ -763,6 +863,36 @@ void stripShow() {
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
+void rotation() {
+  crawlColor(strip.Color(20, 20, 20));
+  crawlColor(strip.Color(18, 18, 18));
+  crawlColor(strip.Color(12, 12, 12));
+  crawlColor(strip.Color(10, 10, 10));
+  crawlColor(strip.Color(7, 7, 7));
+  crawlColor(strip.Color(6, 6, 6));
+  crawlColor(strip.Color(4, 4, 4));
+  crawlColor(strip.Color(2, 2, 2));
+  crawlColor(strip.Color(1, 1, 1));
+  for (int i = 0; i < (strip.numPixels() / 2) -9; i++) {
+    crawlColor(strip.Color(0, 0, 0));
+  }
+}
+
+void rotationFullStrip() {
+  crawlColorStrip(strip.Color(20, 20, 20));
+  crawlColorStrip(strip.Color(18, 18, 18));
+  crawlColorStrip(strip.Color(12, 12, 12));
+  crawlColorStrip(strip.Color(10, 10, 10));
+  crawlColorStrip(strip.Color(7, 7, 7));
+  crawlColorStrip(strip.Color(6, 6, 6));
+  crawlColorStrip(strip.Color(4, 4, 4));
+  crawlColorStrip(strip.Color(2, 2, 2));
+  crawlColorStrip(strip.Color(1, 1, 1));
+  for (int i = 0; i < (strip.numPixels() ) -9; i++) {
+    crawlColorStrip(strip.Color(0, 0, 0));
+  }
+}
+
 //////////
 // rain //
 //////////
@@ -781,7 +911,6 @@ void rain() {
     crawlColor(strip.Color(2, 2, 2));
     crawlColor(strip.Color(1, 1, 1));
   }
-
 }
 
 /////////////
@@ -837,7 +966,6 @@ bool sleep() {
   unsigned long now = millis();
 
   // See if this movement is significant, aka enough to wake us from sleep.
-  
   double m = getMagnitude(getCurrentReading());
   
   if (abs(calibration - m) > SLEEP_SENSITIVITY) {
@@ -862,7 +990,6 @@ bool sleep() {
       // Haven't waited long enough.
       if (PRINT_SLEEP_TIME) {
         Serial.println(" wait period > " + String(now - lastSignificantMovementTime) + " / " + String(SLEEP_WAIT_TIME_MS));
-        //Serial.println(SLEEP_WAIT_TIME_MS);
       }
       sleeping = false;
       digitalWrite(ONBOARD_LED_PIN, sleeping ? HIGH : LOW);
