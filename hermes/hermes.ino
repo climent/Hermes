@@ -62,7 +62,7 @@ const uint8_t KEYFRAMES[]  = {
 /* Debug parameters: */
 #define WAIT_FOR_KEYBOARD 0 // Use keyboard to pause/resume program.
 #define PRINT_LOOP_TIME 0
-#define PRINT_ACCEL_DATA 0
+#define PRINT_ACCEL_DATA 1
 #define PRINT_SLEEP_TIME 0
 #define PRINT_SLEEP_SENS 0
 
@@ -74,7 +74,7 @@ const uint8_t KEYFRAMES[]  = {
 #define MAIN_BUTTON_PIN 10
 #define BUTTON_PIN 9
 /* Number of total animations: */
-#define NUMBER_OF_ANIMATIONS 3
+#define NUMBER_OF_ANIMATIONS 4
 #define NUMBER_OF_SLEEP_ANIMATIONS 4
 
 ///////////////////////////////////////////////////////////////////
@@ -513,18 +513,6 @@ bool equalReadings(AccelReading a, AccelReading b) {
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
-// Rainbow Cycle Program - Equally distributed
-void rainbowCycle(uint8_t wait) {
-  uint16_t i, j;
- 
-  for(j=0; j<256; j++) { // 5 cycles of all colors on wheel
-    for(i=0; i< strip.numPixels(); i++) {
-      strip.setPixelColor(i, Wheel(((i * 256 / strip.numPixels()) + j) & 255));
-    }
-    strip.show();
-    delay(wait);
-  }
-}
 
 //////////////
 // vu-meter //
@@ -614,6 +602,21 @@ unsigned long lastCrawl;
 uint32_t lightArray[LED_COUNT];
 bool goingToSleep = false;
 
+// Rainbow Cycle Program - Equally distributed
+void rainbowCycle(uint8_t wait) {
+  Serial.println("Rainbow!");
+  uint16_t i, j;
+ 
+  for(j=0; j<256; j++) { // 5 cycles of all colors on wheel
+    for(i=0; i< strip.numPixels(); i++) {
+      lightArray[i] = Wheel(((i * 256 / strip.numPixels()) + j) & 255);
+      strip.setPixelColor(i, Wheel(((i * 256 / strip.numPixels()) + j) & 255));
+    }
+    strip.show();
+    delay(wait);
+  }
+}
+
 void colorSetup() {
   lastColor = 0;
   lastCrawl = 0;
@@ -644,6 +647,8 @@ void pintColorData() {
   //showColorProgression();  
 }
 
+bool fadingout = false;
+
 void updateLED() {
   // LED color takes a value from 0.0 to 1.0. Calculate scale from the current vector.
 
@@ -663,7 +668,7 @@ void updateLED() {
         breathe();
         break;
       case 2:
-        fadeOut(3, 0, 0);
+        //if (!fadingout) fadeOut(0, 0, 0);
         rain();
         break;
       case 3:
@@ -686,11 +691,16 @@ void updateLED() {
       case 2:
         crawlColorStrip(pixelColor);
         break;
+      case 11:
+        //showColorProgression();
+        //vuMeterStrip(scale);
+        break;
       case 3:
-        showColorProgression();
+        //showColorProgression();
+        vuMeterPower(pixelColor);
         break;
       case 4:
-        rainbowCycle(scale);
+        rainbowCycle(10);
         break;
       default:
         crawlColor(pixelColor);
@@ -711,23 +721,35 @@ void fadeOut(int red, int green, int blue) {
       r = (uint8_t)(lightArray[i] >> 16),
       g = (uint8_t)(lightArray[i] >>  8),
       b = (uint8_t)lightArray[i];
-      if (r > 3) {
+      if (r > red) {
         r -= 1;
         timeToGo = false;
-      }
-      if (g > 3) {
-        g -= 1;
+      } else if (r < red) {
+        r += 1;
         timeToGo = false;
       }
-      if (b > 3) {
+      if (g > green) {
+        g -= 1;
+        timeToGo = false;
+      } else if (g < green) {
+        g += 1;
+        timeToGo = false;
+      }
+      if (b > blue) {
         b -= 1;
+        timeToGo = false;
+      } else if (b < blue) {
+        b += 1;
         timeToGo = false;
       }
       if (timeToGo) {
+        fadingout = true;
         return;
       }
       lightArray[i] = strip.Color(r, g, b);
       strip.setPixelColor(i, lightArray[i]);
+      button();
+      mainButton();
     }
     stripShow();
     delay(20);
@@ -764,6 +786,14 @@ void crawlColorStrip(uint32_t color) {
   for (int i = 0; i < LED_COUNT; i++) {
     strip.setPixelColor(i, lightArray[i]);
   }
+  stripShow();
+}
+
+void vuMeterPower(uint32_t color) {
+  for (int i = 0; i < LED_COUNT; i++) {
+    lightArray[i] = color;
+    strip.setPixelColor(i, lightArray[i]);
+  }  
   stripShow();
 }
 
@@ -1020,6 +1050,8 @@ void breathe() {
       //(SLEEP_BRIGHTNESS * 127 * KEYFRAMES[keyframePointer]) / 256;
       strip.setPixelColor(i, strip.Color(color, 0, 0));
       lightArray[i] = strip.Color(color, 0, 0);
+      button();
+      mainButton();
     }
     if (wakeup()) {
       break;
