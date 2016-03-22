@@ -3,29 +3,6 @@
    Copyright 2013-2014 RGAM LLC
 */
 
-/* Constants */
-
-const uint8_t KEYFRAMES[]  = {
-  3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
-  3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
-  3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
-  3, 3, 3, 3, 3, 4, 4 ,5 ,5 ,6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12,
-  13, 13, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22,
-  23, 23, 24, 24,
-  // Rising
-//  22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
-//  22, 22, 22, 22, 22, 22, 22, 24, 26, 28, 31, 34, 37, 40, 42, 46, 50, 55, 60,
-//  65, 70, 75, 80, 85, 90, 95, 100, 105, 112, 121, 131, 141, 151, 161, 171, 171,
-
-  // Falling
-//  161, 151, 141, 131, 121, 112, 105, 100, 95, 90, 85, 80, 75, 70, 65, 60, 55,
-//  50, 45, 42, 40, 37, 34, 31, 28, 26, 24, 22, 22, 22, 22, 22, 22, 22, 22, 22,
-//  22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
-//  22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
-//  22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
-//  22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22,
-};
-
 /* Run parameters: */
 #define MAX_BRIGHTNESS 0.75 // Max LED brightness.
 #define MIN_BRIGHTNESS 0.3
@@ -71,8 +48,8 @@ const uint8_t KEYFRAMES[]  = {
 #define ONBOARD_LED_NEOPIX 8 // Pin D8 has an LED connected on FLORA.
 
 /* Button parameters: */
-#define MAIN_BUTTON_PIN 10
-#define BUTTON_PIN 9
+#define BUTTON_A_PIN 9
+#define BUTTON_B_PIN 10
 /* Number of total animations: */
 #define NUMBER_OF_ANIMATIONS 4
 #define NUMBER_OF_SLEEP_ANIMATIONS 4
@@ -89,7 +66,7 @@ const uint8_t KEYFRAMES[]  = {
 // Our custom data type.
 #include "AccelReading.h"
 
-Adafruit_NeoPixel onboard_strip = Adafruit_NeoPixel(1, ONBOARD_LED_NEOPIX, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel onboard_pixel = Adafruit_NeoPixel(1, ONBOARD_LED_NEOPIX, NEO_GRB + NEO_KHZ800);
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(LED_COUNT, DATA_PIN, NEO_GRB + NEO_KHZ800);
 
 
@@ -99,7 +76,6 @@ void setup() {
 
     // Wait for serial to initalize.
     while (!Serial) { }
-
     Serial.println("Strike any key to start...");
 
     // Wait for the next keystroke.
@@ -107,13 +83,12 @@ void setup() {
 
     // Clear the serial buffer.
     Serial.read();
-
     Serial.println("Ready to roll!");
   }
 
   // Let's signal when we are ready to configure the board.
-  onboard_strip.begin();
-  onboard_strip.show();
+  onboard_pixel.begin();
+  onboard_pixel.show();
 
   if (WAIT_FOR_KEYBOARD) {
     Serial.println("Strip is ready.");
@@ -125,7 +100,7 @@ void setup() {
   checkSuperfastHack();
   colorSetup();
 
-  colorWipe(onboard_strip.Color(0, 0, 255), 300); // Blue
+  colorWipe(onboard_pixel.Color(0, 0, 150), 300); // Blue
 
   accelSetup();
 
@@ -134,24 +109,25 @@ void setup() {
   }
 
   // Blinky when we are done.
-  colorWipe(onboard_strip.Color(255, 255, 255), 500); // White
-  colorWipe(onboard_strip.Color(255, 0, 0), 100); // Red
-  colorWipe(onboard_strip.Color(0, 0, 0), 100); // Black
-  colorWipe(onboard_strip.Color(0, 255, 0), 100); // Green
-  colorWipe(onboard_strip.Color(0, 0, 0), 100); // Black
-  colorWipe(onboard_strip.Color(255, 0, 0), 100); // Red
-  colorWipe(onboard_strip.Color(0, 0, 0), 100); // Black
-  colorWipe(onboard_strip.Color(0, 255, 0), 100); // Green
-  colorWipe(onboard_strip.Color(0, 0, 0), 100); // Red
-  pinMode(BUTTON_PIN, INPUT_PULLUP);
-  pinMode(MAIN_BUTTON_PIN, INPUT_PULLUP);
+  colorWipe(onboard_pixel.Color(255, 255, 255), 500); // White
+  colorWipe(onboard_pixel.Color(255, 0, 0), 100); // Red
+  colorWipe(onboard_pixel.Color(0, 0, 0), 100); // Black
+  colorWipe(onboard_pixel.Color(0, 255, 0), 100); // Green
+  colorWipe(onboard_pixel.Color(0, 0, 0), 100); // Black
+  colorWipe(onboard_pixel.Color(255, 0, 0), 100); // Red
+  colorWipe(onboard_pixel.Color(0, 0, 0), 100); // Black
+  colorWipe(onboard_pixel.Color(0, 255, 0), 100); // Green
+  colorWipe(onboard_pixel.Color(0, 0, 0), 100); // Red
+
+  // Setup 2 buttons
+  pinMode(BUTTON_A_PIN, INPUT_PULLUP);
+  pinMode(BUTTON_B_PIN, INPUT_PULLUP);
 
 }
 
 // Main loop
 void loop() {
-  button();
-  mainButton();
+  buttons();
   loopDebug();
   accelPoll();
   updateLED();
@@ -164,57 +140,58 @@ void loop() {
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
-////////////////
-// Mainbutton //
-////////////////
+/////////////
+// buttonB //
+/////////////
 
-bool oldMainButtonState = HIGH;
-int  showMainButtonType = 1;
+bool oldButtonBState = HIGH;
+int  showButtonBType = 1;
+int buttonBCounter = NUMBER_OF_ANIMATIONS;
 
-void mainButton() {
+void buttonB() {
   // Get current button state.
-  bool newMainButtonState = digitalRead(MAIN_BUTTON_PIN);
+  bool newButtonBState = digitalRead(BUTTON_B_PIN);
 
   // Check if state changed from high to low (button press).
-  if (newMainButtonState == LOW && oldMainButtonState == HIGH) {
+  if (newButtonBState == LOW && oldButtonBState == HIGH) {
     // Short delay to debounce button.
     delay(20);
     // Check if button is still low after debounce.
-    newMainButtonState = digitalRead(MAIN_BUTTON_PIN);
-    if (newMainButtonState == LOW) {
-      showMainButtonType++;
+    newButtonBState = digitalRead(BUTTON_B_PIN);
+    if (newButtonBState == LOW) {
+      showButtonBType++;
       for (int i = 0; i < 7; i++) {
         showColorOff();
         delay(100);
         showCalibration();
         delay(100);
       }
-      if (showMainButtonType > NUMBER_OF_ANIMATIONS)
-        showMainButtonType=1;
+      if (showButtonBType > NUMBER_OF_ANIMATIONS)
+        showButtonBType=1;
     }
   }
 
   // Set the last button state to the old state.
-  oldMainButtonState = newMainButtonState;
+  oldButtonBState = newButtonBState;
 }
 
-////////////
-// button //
-////////////
+/////////////
+// buttonA //
+/////////////
 
 bool oldState = HIGH;
 int showType = 1;
 
-void button() {
+void buttonA() {
   // Get current button state.
-  bool newState = digitalRead(BUTTON_PIN);
+  bool newState = digitalRead(BUTTON_A_PIN);
 
   // Check if state changed from high to low (button press).
   if (newState == LOW && oldState == HIGH) {
     // Short delay to debounce button.
     delay(20);
     // Check if button is still low after debounce.
-    newState = digitalRead(BUTTON_PIN);
+    newState = digitalRead(BUTTON_A_PIN);
     if (newState == LOW) {
       showType++;
       for (int i = 0; i < 3; i++) {
@@ -235,9 +212,9 @@ void button() {
 
 // Fill the dots one after the other with a color
 void colorWipe(uint32_t c, uint8_t wait) {
-  for (uint16_t i = 0; i < onboard_strip.numPixels(); i++) {
-    onboard_strip.setPixelColor(i, c);
-    onboard_strip.show();
+  for (uint16_t i = 0; i < onboard_pixel.numPixels(); i++) {
+    onboard_pixel.setPixelColor(i, c);
+    onboard_pixel.show();
     delay(wait);
   }
 }
@@ -517,63 +494,71 @@ bool equalReadings(AccelReading a, AccelReading b) {
 //////////////
 // vu-meter //
 //////////////
-
+//
+//#define TOP       (LED_COUNT +1)
+//#define DC_OFFSET  0  // DC offset in mic signal - if unusure, leave 0
+//
+//int
+//  lvl       = 0,     // Current "dampened" audio level
+//  minLvlAvg = 0,      // For dynamic adjustment of graph low & high
+//  maxLvlAvg = 512;
+//
 //void vuMeter(double scale) {
-//
-//  float brightness = MAX_BRIGHTNESS * (scale + MIN_BRIGHTNESS);
-//  int c = COLOR_RANGE * scale; // Intentionally round to an int.
-//
-//  uint8_t  i;
-//  uint16_t minLvl, maxLvl;
+////
+////  float brightness = MAX_BRIGHTNESS * (scale + MIN_BRIGHTNESS);
+////  int c = COLOR_RANGE * scale; // Intentionally round to an int.
+////
+////  uint8_t  i;
+////  uint16_t minLvl, maxLvl;
 //  int      n, height;
-// 
-//  n   = abs(n - 512 - DC_OFFSET); // Center on zero
-//  n   = (n <= NOISE) ? 0 : (n - NOISE);             // Remove noise/hum
+//// 
+//  n   = abs(scale - 512 - DC_OFFSET); // Center on zero
+////  n   = (n <= NOISE) ? 0 : (n - NOISE);             // Remove noise/hum
 //  lvl = ((lvl * 7) + n) >> 3;    // "Dampened" reading (else looks twitchy)
-// 
+//// 
 //  // Calculate bar height based on dynamic min/max levels (fixed point):
 //  height = TOP * (lvl - minLvlAvg) / (long)(maxLvlAvg - minLvlAvg);
-// 
+//  Serial.println(height);
 //  if(height < 0L)       height = 0;      // Clip output
 //  else if(height > TOP) height = TOP;
-//  if(height > peak)     peak   = height; // Keep 'peak' dot at top
-// 
-// 
-//  // Color pixels based on rainbow gradient
-//  for(i=0; i<N_PIXELS; i++) {
+////  if(height > peak)     peak   = height; // Keep 'peak' dot at top
+//// 
+//// 
+////  // Color pixels based on rainbow gradient
+//  for(int i=0; i<strip.numPixels(); i++) {
 //    if(i >= height)               strip.setPixelColor(i,   0,   0, 0);
 //    else strip.setPixelColor(i,Wheel(map(i,0,strip.numPixels()-1,30,150)));
-//    
 //  }
+//  strip.show();
 //
-//  // Draw peak dot  
-//  if(peak > 0 && peak <= N_PIXELS-1) strip.setPixelColor(peak,Wheel(map(peak,0,strip.numPixels()-1,30,150)));
-//    strip.show(); // Update strip
-//    // Every few frames, make the peak pixel drop by 1:
-//    if(++dotCount >= PEAK_FALL) { //fall rate 
-//      if(peak > 0) peak--;
-//      dotCount = 0;
-//    }
-// 
-//    vol[volCount] = n;                      // Save sample for dynamic leveling
-//    if(++volCount >= SAMPLES) volCount = 0; // Advance/rollover sample counter
-// 
-//    // Get volume range of prior frames
-//    minLvl = maxLvl = vol[0];
-//    for(i=1; i<SAMPLES; i++) {
-//      if(vol[i] < minLvl)      minLvl = vol[i];
-//      else if(vol[i] > maxLvl) maxLvl = vol[i];
-//    }
-//    // minLvl and maxLvl indicate the volume range over prior frames, used
-//  // for vertically scaling the output graph (so it looks interesting
-//  // regardless of volume level).  If they're too close together though
-//  // (e.g. at very low volume levels) the graph becomes super coarse
-//  // and 'jumpy'...so keep some minimum distance between them (this
-//  // also lets the graph go to zero when no sound is playing):
-//  if((maxLvl - minLvl) < TOP) maxLvl = minLvl + TOP;
-//  minLvlAvg = (minLvlAvg * 63 + minLvl) >> 6; // Dampen min/max levels
-//  maxLvlAvg = (maxLvlAvg * 63 + maxLvl) >> 6; // (fake rolling average)
-// 
+////  // Draw peak dot  
+////  if(peak > 0 && peak <= N_PIXELS-1) strip.setPixelColor(peak,Wheel(map(peak,0,strip.numPixels()-1,30,150)));
+////    strip.show(); // Update strip
+////    // Every few frames, make the peak pixel drop by 1:
+////    if(++dotCount >= PEAK_FALL) { //fall rate 
+////      if(peak > 0) peak--;
+////      dotCount = 0;
+////    }
+//// 
+////    vol[volCount] = n;                      // Save sample for dynamic leveling
+////    if(++volCount >= SAMPLES) volCount = 0; // Advance/rollover sample counter
+//// 
+////    // Get volume range of prior frames
+////    minLvl = maxLvl = vol[0];
+////    for(i=1; i<SAMPLES; i++) {
+////      if(vol[i] < minLvl)      minLvl = vol[i];
+////      else if(vol[i] > maxLvl) maxLvl = vol[i];
+////    }
+////    // minLvl and maxLvl indicate the volume range over prior frames, used
+////  // for vertically scaling the output graph (so it looks interesting
+////  // regardless of volume level).  If they're too close together though
+////  // (e.g. at very low volume levels) the graph becomes super coarse
+////  // and 'jumpy'...so keep some minimum distance between them (this
+////  // also lets the graph go to zero when no sound is playing):
+////  if((maxLvl - minLvl) < TOP) maxLvl = minLvl + TOP;
+////  minLvlAvg = (minLvlAvg * 63 + minLvl) >> 6; // Dampen min/max levels
+////  maxLvlAvg = (maxLvlAvg * 63 + maxLvl) >> 6; // (fake rolling average)
+//// 
 //}
 
 uint32_t Wheel(byte WheelPos) {
@@ -604,18 +589,20 @@ bool goingToSleep = false;
 
 // Rainbow Cycle Program - Equally distributed
 void rainbowCycle(uint8_t wait) {
-  Serial.println("Rainbow!");
   uint16_t i, j;
  
-  for(j=0; j<256; j++) { // 5 cycles of all colors on wheel
+  for(j = 0; j < 256 ; j++) { // 5 cycles of all colors on wheel
     for(i=0; i< strip.numPixels(); i++) {
       lightArray[i] = Wheel(((i * 256 / strip.numPixels()) + j) & 255);
       strip.setPixelColor(i, Wheel(((i * 256 / strip.numPixels()) + j) & 255));
     }
+    if (wakeup()) return;
+    buttons();
     strip.show();
     delay(wait);
   }
 }
+
 
 void colorSetup() {
   lastColor = 0;
@@ -641,14 +628,6 @@ void printAccelData(double scale) {
   }
 }
 
-void pintColorData() {
-  //Serial.println(scale);
-  //Serial.println(pixelColor);
-  //showColorProgression();  
-}
-
-bool fadingout = false;
-
 void updateLED() {
   // LED color takes a value from 0.0 to 1.0. Calculate scale from the current vector.
 
@@ -664,11 +643,10 @@ void updateLED() {
   if (sleep()) {
     switch(showType) {
       case 1:
-        fadeOut(3, 0, 0);
+        fadeOut(3, 0, 0, 20);
         breathe();
         break;
       case 2:
-        //if (!fadingout) fadeOut(0, 0, 0);
         rain();
         break;
       case 3:
@@ -679,28 +657,23 @@ void updateLED() {
         break;
       // In case we missed the animation, use this as default
       default:
-        fadeOut(3, 0, 0);
+        fadeOut(3, 0, 0, 20);
         breathe();
         break;
     }
   } else {
-    switch(showMainButtonType){
+    switch(showButtonBType){
       case 1:
         crawlColor(pixelColor);
         break;
       case 2:
         crawlColorStrip(pixelColor);
         break;
-      case 11:
-        //showColorProgression();
-        //vuMeterStrip(scale);
-        break;
       case 3:
-        //showColorProgression();
         vuMeterPower(pixelColor);
         break;
       case 4:
-        rainbowCycle(10);
+        rainbowCycle(0);
         break;
       default:
         crawlColor(pixelColor);
@@ -710,12 +683,9 @@ void updateLED() {
 }
 
 // decreases the colors of the strip, from the current value to the given value.
-// It uses final 
-
-void fadeOut(int red, int green, int blue) {
+void fadeOut(int red, int green, int blue, int wait) {
   while (1) {
     bool timeToGo = true;
-    //Serial.println("Decreasing colors...");
     for (int i = 0; i < strip.numPixels(); i++) {
       uint8_t *p,
       r = (uint8_t)(lightArray[i] >> 16),
@@ -743,16 +713,14 @@ void fadeOut(int red, int green, int blue) {
         timeToGo = false;
       }
       if (timeToGo) {
-        fadingout = true;
         return;
       }
       lightArray[i] = strip.Color(r, g, b);
       strip.setPixelColor(i, lightArray[i]);
-      button();
-      mainButton();
     }
     stripShow();
-    delay(20);
+    delay(wait);
+    buttons();
     if (wakeup()){
       return;
     }
@@ -840,9 +808,7 @@ void crawlColor(uint32_t color) {
     for (int led = centerLED; led < centerLED + LEDsPerSide; led++) {
       strip.setPixelColor(constrainBetween(led, 0, LED_COUNT - 1), *pixelColor++);
     }
-
     stripShow();
-
     return;
   }
 
@@ -891,24 +857,24 @@ uint32_t pixelColorForScale(double scale) {
   return color(c, brightness);
 }
 
-// Shows the color progression.
-void showColorProgression() {
-  for (int j = 0; j < 384; j++) {
-    for (int i = 0; i < strip.numPixels(); i++) {
-      strip.setPixelColor(i, color(j, 0.5));
-    }
-    stripShow();
-    delay(1);
-    if (wakeup()) {
-      return;
-    }
-  }
-  for (int i = 0; i < strip.numPixels(); i++) {
-    strip.setPixelColor(i, 0);
-  }
-  stripShow();
-  delay(1);
-}
+//// Shows the color progression.
+//void showColorProgression() {
+//  for (int j = 0; j < 384; j++) {
+//    for (int i = 0; i < strip.numPixels(); i++) {
+//      strip.setPixelColor(i, color(j, 0.5));
+//    }
+//    stripShow();
+//    delay(1);
+//    if (wakeup()) {
+//      return;
+//    }
+//  }
+//  for (int i = 0; i < strip.numPixels(); i++) {
+//    strip.setPixelColor(i, 0);
+//  }
+//  stripShow();
+//  delay(1);
+//}
 
 // Color 1 from 384; brightness 0.0 to 1.0.
 uint32_t color(uint16_t color, float brightness)  {
@@ -1040,26 +1006,39 @@ void rain() {
 // breathe //
 /////////////
 
-void breathe() {
-  int keyframePointer = 0;
-  int numKeyframes = sizeof(KEYFRAMES) - 1;
+void buttons() {
+  buttonA();
+  buttonB();
+}
 
-  for (int keyframePointer = 0; keyframePointer < numKeyframes; keyframePointer++) {
-    for (int i = 0; i < strip.numPixels(); i++) {
-      uint8_t color = KEYFRAMES[keyframePointer];
-      //(SLEEP_BRIGHTNESS * 127 * KEYFRAMES[keyframePointer]) / 256;
-      strip.setPixelColor(i, strip.Color(color, 0, 0));
-      lightArray[i] = strip.Color(color, 0, 0);
-      button();
-      mainButton();
-    }
+void breathe() {
+//  int keyframePointer = 0;
+//  int numKeyframes = sizeof(KEYFRAMES) - 1;
+//
+//  for (int keyframePointer = 0; keyframePointer < numKeyframes; keyframePointer++) {
+//    for (int i = 0; i < strip.numPixels(); i++) {
+//      uint8_t color = KEYFRAMES[keyframePointer];
+//      //(SLEEP_BRIGHTNESS * 127 * KEYFRAMES[keyframePointer]) / 256;
+//      strip.setPixelColor(i, strip.Color(color, 0, 0));
+//      lightArray[i] = strip.Color(color, 0, 0);
+//      button();
+//      mainButton();
+//    }
+//    if (wakeup()) {
+//      break;
+//    }
+//    stripShow();
+//    delay(20);
+//  }
+  for (int i = 0; i < 100; i++) {
+    strip.setPixelColor(i, strip.Color(3, 0, 0));
     if (wakeup()) {
-      break;
+      return;
     }
-    stripShow();
-    delay(20);
+    buttons();
   }
-  fadeOut(3, 0, 0);
+  fadeOut(24, 0, 0, 20);
+  fadeOut(3, 0, 0, 20);
 }
 
 ////////////
@@ -1129,5 +1108,4 @@ bool sleep() {
     }
     waiting = true;
   }
-
 }
