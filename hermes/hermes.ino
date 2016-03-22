@@ -146,7 +146,6 @@ void loop() {
 
 bool oldButtonBState = HIGH;
 int  showButtonBType = 1;
-int buttonBCounter = NUMBER_OF_ANIMATIONS;
 
 void buttonB() {
   // Get current button state.
@@ -562,14 +561,15 @@ bool equalReadings(AccelReading a, AccelReading b) {
 //}
 
 uint32_t Wheel(byte WheelPos) {
+  // All the values are multiplied by .5, or otherwise we overload the board on USB power and it crashes hard.
   if(WheelPos < 85) {
-   return strip.Color(WheelPos * 3, 255 - WheelPos * 3, 0);
+   return strip.Color(.5 * (WheelPos * 3), .5 * (255 - WheelPos * 3), 0);
   } else if(WheelPos < 170) {
    WheelPos -= 85;
-   return strip.Color(255 - WheelPos * 3, 0, WheelPos * 3);
+   return strip.Color(.5 * (255 - WheelPos * 3), 0, .5 * (WheelPos * 3));
   } else {
    WheelPos -= 170;
-   return strip.Color(0, WheelPos * 3, 255 - WheelPos * 3);
+   return strip.Color(0, .5 * (WheelPos * 3), .5 * (255 - WheelPos * 3));
   }
 }
 
@@ -598,11 +598,10 @@ void rainbowCycle(uint8_t wait) {
     }
     if (wakeup()) return;
     buttons();
-    strip.show();
+    stripShow();
     delay(wait);
   }
 }
-
 
 void colorSetup() {
   lastColor = 0;
@@ -633,14 +632,10 @@ void updateLED() {
 
   // Largest vector needed to hit max color (1.0).
   double upperBound = HERMES_SENSITIVITY;
-  double normalizedVector = abs(calibration - getMagnitude(getCurrentReading()));
-  double scale = normalizedVector / upperBound;
-  uint32_t pixelColor = pixelColorForScale(scale);
-
-  printAccelData(scale);
+  double m = getMagnitude(getCurrentReading());
 
   // Change LED strip color.
-  if (sleep()) {
+  if (sleep(m)) {
     switch(showType) {
       case 1:
         fadeOut(3, 0, 0, 20);
@@ -662,6 +657,12 @@ void updateLED() {
         break;
     }
   } else {
+  double normalizedVector = abs(calibration - m);
+  double scale = normalizedVector / upperBound;
+  uint32_t pixelColor = pixelColorForScale(scale);
+
+  printAccelData(scale);
+
     switch(showButtonBType){
       case 1:
         crawlColor(pixelColor);
@@ -964,6 +965,7 @@ void rotation() {
   crawlColor(strip.Color(1, 1, 1));
   for (int i = 0; i < (strip.numPixels() / 2) -9; i++) {
     crawlColor(strip.Color(0, 0, 0));
+    buttons();
   }
 }
 
@@ -979,6 +981,7 @@ void rotationFullStrip() {
   crawlColorStrip(strip.Color(1, 1, 1));
   for (int i = 0; i < (strip.numPixels() ) -9; i++) {
     crawlColorStrip(strip.Color(0, 0, 0));
+    buttons();
   }
 }
 
@@ -1000,6 +1003,7 @@ void rain() {
     crawlColor(strip.Color(2, 2, 2));
     crawlColor(strip.Color(1, 1, 1));
   }
+  buttons();
 }
 
 /////////////
@@ -1012,29 +1016,13 @@ void buttons() {
 }
 
 void breathe() {
-//  int keyframePointer = 0;
-//  int numKeyframes = sizeof(KEYFRAMES) - 1;
-//
-//  for (int keyframePointer = 0; keyframePointer < numKeyframes; keyframePointer++) {
-//    for (int i = 0; i < strip.numPixels(); i++) {
-//      uint8_t color = KEYFRAMES[keyframePointer];
-//      //(SLEEP_BRIGHTNESS * 127 * KEYFRAMES[keyframePointer]) / 256;
-//      strip.setPixelColor(i, strip.Color(color, 0, 0));
-//      lightArray[i] = strip.Color(color, 0, 0);
-//      button();
-//      mainButton();
-//    }
-//    if (wakeup()) {
-//      break;
-//    }
-//    stripShow();
-//    delay(20);
-//  }
   for (int i = 0; i < 100; i++) {
     strip.setPixelColor(i, strip.Color(3, 0, 0));
     if (wakeup()) {
       return;
     }
+    stripShow();
+    delay(10);
     buttons();
   }
   fadeOut(24, 0, 0, 20);
@@ -1065,12 +1053,12 @@ bool wakeup() {
 bool sleeping = false;
 bool waiting = false;
 
-bool sleep() {
+bool sleep(double m) {
   int repeats = 0;
   unsigned long now = millis();
 
-  // See if this movement is significant, aka enough to wake us from sleep.
-  double m = getMagnitude(getCurrentReading());
+//  // See if this movement is significant, aka enough to wake us from sleep.
+//  double m = getMagnitude(getCurrentReading());
   
   if (abs(calibration - m) > SLEEP_SENSITIVITY) {
     lastSignificantMovementTime = now;
