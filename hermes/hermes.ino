@@ -632,10 +632,10 @@ void updateLED() {
 
   // Largest vector needed to hit max color (1.0).
   double upperBound = HERMES_SENSITIVITY;
-  double m = getMagnitude(getCurrentReading());
+  double magnitude = getMagnitude(getCurrentReading());
 
   // Change LED strip color.
-  if (sleep(m)) {
+  if (sleep(magnitude)) {
     switch(showType) {
       case 1:
         fadeOut(3, 0, 0, 20);
@@ -657,11 +657,10 @@ void updateLED() {
         break;
     }
   } else {
-  double normalizedVector = abs(calibration - m);
-  double scale = normalizedVector / upperBound;
-  uint32_t pixelColor = pixelColorForScale(scale);
-
-  printAccelData(scale);
+    double normalizedVector = abs(calibration - magnitude);
+    double scale = normalizedVector / upperBound;
+    uint32_t pixelColor = pixelColorForScale(scale);
+    printAccelData(scale);
 
     switch(showButtonBType){
       case 1:
@@ -683,7 +682,7 @@ void updateLED() {
   }
 }
 
-// decreases the colors of the strip, from the current value to the given value.
+// Changes the colors of the strip, from the current value to the given value.
 void fadeOut(int red, int green, int blue, int wait) {
   while (1) {
     bool timeToGo = true;
