@@ -48,10 +48,11 @@
 #define ONBOARD_LED_NEOPIX 8 // Pin D8 has an LED connected on FLORA.
 
 /* Button parameters: */
+#define buttonPin 9 
 #define BUTTON_A_PIN 9
 #define BUTTON_B_PIN 10
 /* Number of total animations: */
-#define NUMBER_OF_ANIMATIONS 4
+#define NUMBER_OF_ANIMATIONS 3
 #define NUMBER_OF_SLEEP_ANIMATIONS 4
 
 ///////////////////////////////////////////////////////////////////
@@ -95,7 +96,7 @@ void setup() {
   }
 
   // During the setup process, signal where we are with colors:
-  // Blue: waiting for the accelerator to calibrate. 
+  // Blue: waiting for the accelerator to calibrate.
 
   checkSuperfastHack();
   colorSetup();
@@ -140,74 +141,9 @@ void loop() {
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
-/////////////
-// buttonB //
-/////////////
-
-bool oldButtonBState = HIGH;
 int  showButtonBType = 1;
-
-void buttonB() {
-  // Get current button state.
-  bool newButtonBState = digitalRead(BUTTON_B_PIN);
-
-  // Check if state changed from high to low (button press).
-  if (newButtonBState == LOW && oldButtonBState == HIGH) {
-    // Short delay to debounce button.
-    delay(20);
-    // Check if button is still low after debounce.
-    newButtonBState = digitalRead(BUTTON_B_PIN);
-    if (newButtonBState == LOW) {
-      showButtonBType++;
-      for (int i = 0; i < 7; i++) {
-        showColorOff();
-        delay(100);
-        showCalibration();
-        delay(100);
-      }
-      if (showButtonBType > NUMBER_OF_ANIMATIONS)
-        showButtonBType=1;
-    }
-  }
-
-  // Set the last button state to the old state.
-  oldButtonBState = newButtonBState;
-}
-
-/////////////
-// buttonA //
-/////////////
-
-bool oldState = HIGH;
 int showType = 1;
 
-void buttonA() {
-  // Get current button state.
-  bool newState = digitalRead(BUTTON_A_PIN);
-
-  // Check if state changed from high to low (button press).
-  if (newState == LOW && oldState == HIGH) {
-    // Short delay to debounce button.
-    delay(20);
-    // Check if button is still low after debounce.
-    newState = digitalRead(BUTTON_A_PIN);
-    if (newState == LOW) {
-      showType++;
-      for (int i = 0; i < 3; i++) {
-        showColorOff();
-        delay(100);
-        showCalibration();
-        delay(100);
-      }
-      if (showType > NUMBER_OF_SLEEP_ANIMATIONS)
-        showType=1;
-      //startShow(showType);
-    }
-  }
-
-  // Set the last button state to the old state.
-  oldState = newState;
-}
 
 // Fill the dots one after the other with a color
 void colorWipe(uint32_t c, uint8_t wait) {
@@ -510,19 +446,19 @@ bool equalReadings(AccelReading a, AccelReading b) {
 ////  uint8_t  i;
 ////  uint16_t minLvl, maxLvl;
 //  int      n, height;
-//// 
+////
 //  n   = abs(scale - 512 - DC_OFFSET); // Center on zero
 ////  n   = (n <= NOISE) ? 0 : (n - NOISE);             // Remove noise/hum
 //  lvl = ((lvl * 7) + n) >> 3;    // "Dampened" reading (else looks twitchy)
-//// 
+////
 //  // Calculate bar height based on dynamic min/max levels (fixed point):
 //  height = TOP * (lvl - minLvlAvg) / (long)(maxLvlAvg - minLvlAvg);
 //  Serial.println(height);
 //  if(height < 0L)       height = 0;      // Clip output
 //  else if(height > TOP) height = TOP;
 ////  if(height > peak)     peak   = height; // Keep 'peak' dot at top
-//// 
-//// 
+////
+////
 ////  // Color pixels based on rainbow gradient
 //  for(int i=0; i<strip.numPixels(); i++) {
 //    if(i >= height)               strip.setPixelColor(i,   0,   0, 0);
@@ -530,18 +466,18 @@ bool equalReadings(AccelReading a, AccelReading b) {
 //  }
 //  strip.show();
 //
-////  // Draw peak dot  
+////  // Draw peak dot
 ////  if(peak > 0 && peak <= N_PIXELS-1) strip.setPixelColor(peak,Wheel(map(peak,0,strip.numPixels()-1,30,150)));
 ////    strip.show(); // Update strip
 ////    // Every few frames, make the peak pixel drop by 1:
-////    if(++dotCount >= PEAK_FALL) { //fall rate 
+////    if(++dotCount >= PEAK_FALL) { //fall rate
 ////      if(peak > 0) peak--;
 ////      dotCount = 0;
 ////    }
-//// 
+////
 ////    vol[volCount] = n;                      // Save sample for dynamic leveling
 ////    if(++volCount >= SAMPLES) volCount = 0; // Advance/rollover sample counter
-//// 
+////
 ////    // Get volume range of prior frames
 ////    minLvl = maxLvl = vol[0];
 ////    for(i=1; i<SAMPLES; i++) {
@@ -557,19 +493,19 @@ bool equalReadings(AccelReading a, AccelReading b) {
 ////  if((maxLvl - minLvl) < TOP) maxLvl = minLvl + TOP;
 ////  minLvlAvg = (minLvlAvg * 63 + minLvl) >> 6; // Dampen min/max levels
 ////  maxLvlAvg = (maxLvlAvg * 63 + maxLvl) >> 6; // (fake rolling average)
-//// 
+////
 //}
 
 uint32_t Wheel(byte WheelPos) {
   // All the values are multiplied by .5, or otherwise we overload the board on USB power and it crashes hard.
-  if(WheelPos < 85) {
-   return strip.Color(.5 * (WheelPos * 3), .5 * (255 - WheelPos * 3), 0);
-  } else if(WheelPos < 170) {
-   WheelPos -= 85;
-   return strip.Color(.5 * (255 - WheelPos * 3), 0, .5 * (WheelPos * 3));
+  if (WheelPos < 85) {
+    return strip.Color(.5 * (WheelPos * 3), .5 * (255 - WheelPos * 3), 0);
+  } else if (WheelPos < 170) {
+    WheelPos -= 85;
+    return strip.Color(.5 * (255 - WheelPos * 3), 0, .5 * (WheelPos * 3));
   } else {
-   WheelPos -= 170;
-   return strip.Color(0, .5 * (WheelPos * 3), .5 * (255 - WheelPos * 3));
+    WheelPos -= 170;
+    return strip.Color(0, .5 * (WheelPos * 3), .5 * (255 - WheelPos * 3));
   }
 }
 
@@ -590,9 +526,9 @@ bool goingToSleep = false;
 // Rainbow Cycle Program - Equally distributed
 void rainbowCycle(uint8_t wait) {
   uint16_t i, j;
- 
-  for(j = 0; j < 256 ; j++) { // 5 cycles of all colors on wheel
-    for(i=0; i< strip.numPixels(); i++) {
+
+  for (j = 0; j < 256 ; j++) { // 5 cycles of all colors on wheel
+    for (i = 0; i < strip.numPixels(); i++) {
       lightArray[i] = Wheel(((i * 256 / strip.numPixels()) + j) & 255);
       strip.setPixelColor(i, Wheel(((i * 256 / strip.numPixels()) + j) & 255));
     }
@@ -636,7 +572,7 @@ void updateLED() {
 
   // Change LED strip color.
   if (sleep(magnitude)) {
-    switch(showType) {
+    switch (showType) {
       case 1:
         fadeOut(3, 0, 0, 20);
         breathe();
@@ -650,6 +586,9 @@ void updateLED() {
       case 4:
         rotationFullStrip();
         break;
+      case 100:
+        fadeOut(0, 0, 0, 100);
+        break;
       // In case we missed the animation, use this as default
       default:
         fadeOut(3, 0, 0, 20);
@@ -662,7 +601,7 @@ void updateLED() {
     uint32_t pixelColor = pixelColorForScale(scale);
     printAccelData(scale);
 
-    switch(showButtonBType){
+    switch (showButtonBType) {
       case 1:
         crawlColor(pixelColor);
         break;
@@ -674,6 +613,9 @@ void updateLED() {
         break;
       case 4:
         rainbowCycle(0);
+        break;
+      case 100:
+        fadeOut(0, 0, 0, 100);
         break;
       default:
         crawlColor(pixelColor);
@@ -688,9 +630,9 @@ void fadeOut(int red, int green, int blue, int wait) {
     bool timeToGo = true;
     for (int i = 0; i < strip.numPixels(); i++) {
       uint8_t *p,
-      r = (uint8_t)(lightArray[i] >> 16),
-      g = (uint8_t)(lightArray[i] >>  8),
-      b = (uint8_t)lightArray[i];
+              r = (uint8_t)(lightArray[i] >> 16),
+              g = (uint8_t)(lightArray[i] >>  8),
+              b = (uint8_t)lightArray[i];
       if (r > red) {
         r -= 1;
         timeToGo = false;
@@ -721,10 +663,10 @@ void fadeOut(int red, int green, int blue, int wait) {
     stripShow();
     delay(wait);
     buttons();
-    if (wakeup()){
+    if (wakeup()) {
       return;
     }
-  }  
+  }
 }
 
 void crawlColorStrip(uint32_t color) {
@@ -761,7 +703,7 @@ void vuMeterPower(uint32_t color) {
   for (int i = 0; i < LED_COUNT; i++) {
     lightArray[i] = color;
     strip.setPixelColor(i, lightArray[i]);
-  }  
+  }
   stripShow();
 }
 
@@ -962,7 +904,7 @@ void rotation() {
   crawlColor(strip.Color(4, 4, 4));
   crawlColor(strip.Color(2, 2, 2));
   crawlColor(strip.Color(1, 1, 1));
-  for (int i = 0; i < (strip.numPixels() / 2) -9; i++) {
+  for (int i = 0; i < (strip.numPixels() / 2) - 9; i++) {
     crawlColor(strip.Color(0, 0, 0));
     buttons();
   }
@@ -978,7 +920,7 @@ void rotationFullStrip() {
   crawlColorStrip(strip.Color(4, 4, 4));
   crawlColorStrip(strip.Color(2, 2, 2));
   crawlColorStrip(strip.Color(1, 1, 1));
-  for (int i = 0; i < (strip.numPixels() ) -9; i++) {
+  for (int i = 0; i < (strip.numPixels() ) - 9; i++) {
     crawlColorStrip(strip.Color(0, 0, 0));
     buttons();
   }
@@ -1010,8 +952,36 @@ void rain() {
 /////////////
 
 void buttons() {
-  buttonA();
-  buttonB();
+  int b = checkButton();
+  if (b == 1) {
+    showType++;
+    if (showType > NUMBER_OF_SLEEP_ANIMATIONS)
+      showType = 1;
+    for (int i = 0; i < 3; i++) {
+      showColorOff();
+      delay(100);
+      showCalibration();
+      delay(100);
+    }
+  }
+
+  if (b == 2) {
+    showButtonBType++;
+    if (showButtonBType > NUMBER_OF_ANIMATIONS)
+      showButtonBType = 1;
+    for (int i = 0; i < 7; i++) {
+      showColorOff();
+      delay(100);
+      showCalibration();
+      delay(100);
+    }
+  }
+  if (b == 3 || b == 4) {
+    showButtonBType = 100;
+    showType = 100;
+  }
+//  buttonA();
+//  buttonB();
 }
 
 void breathe() {
@@ -1035,7 +1005,7 @@ void breathe() {
 bool wakeup() {
   accelPoll();
   double m = getMagnitude(getCurrentReading());
-  
+
   if (abs(calibration - m) > SLEEP_SENSITIVITY) {
     if (PRINT_SLEEP_SENS) {
       Serial.println("Waking up...");
@@ -1056,9 +1026,9 @@ bool sleep(double m) {
   int repeats = 0;
   unsigned long now = millis();
 
-//  // See if this movement is significant, aka enough to wake us from sleep.
-//  double m = getMagnitude(getCurrentReading());
-  
+  //  // See if this movement is significant, aka enough to wake us from sleep.
+  //  double m = getMagnitude(getCurrentReading());
+
   if (abs(calibration - m) > SLEEP_SENSITIVITY) {
     lastSignificantMovementTime = now;
     waiting = false;
@@ -1091,8 +1061,97 @@ bool sleep(double m) {
       }
       sleeping = true;
       digitalWrite(ONBOARD_LED_PIN, sleeping ? HIGH : LOW);
-      return true;    
+      return true;
     }
     waiting = true;
   }
+}
+
+/*
+  MULTI-CLICK: One Button, Multiple Events
+
+  Oct 12, 2009
+  Run checkButton() to retrieve a button event:
+  Click
+  Double-Click
+  Hold
+  Long Hold
+*/
+
+// Button timing variables
+int debounce = 20; // ms debounce period to prevent flickering when pressing or releasing the button
+int DCgap = 250; // max ms between clicks for a double click event
+int holdTime = 2000; // ms hold period: how long to wait for press+hold event
+int longHoldTime = 5000; // ms long hold period: how long to wait for press+hold event
+
+// Other button variables
+boolean buttonVal = HIGH; // value read from button
+boolean buttonLast = HIGH; // buffered value of the button's previous state
+boolean DCwaiting = false; // whether we're waiting for a double click (down)
+boolean DConUp = false; // whether to register a double click on next release, or whether to wait and click
+boolean singleOK = true; // whether it's OK to do a single click
+long downTime = -1; // time the button was pressed down
+long upTime = -1; // time the button was released
+boolean ignoreUp = false; // whether to ignore the button release because the click+hold was triggered
+boolean waitForUp = false; // when held, whether to wait for the up event
+boolean holdEventPast = false; // whether or not the hold event happened already
+boolean longHoldEventPast = false;// whether or not the long hold event happened already
+
+int checkButton()
+{
+  int event = 0;
+  // Read the state of the button
+  buttonVal = digitalRead(buttonPin);
+  // Button pressed down
+  if (buttonVal == LOW && buttonLast == HIGH && (millis() - upTime) > debounce) {
+    downTime = millis();
+    ignoreUp = false;
+    waitForUp = false;
+    singleOK = true;
+    holdEventPast = false;
+    longHoldEventPast = false;
+    if ((millis() - upTime) < DCgap && DConUp == false && DCwaiting == true) DConUp = true;
+    else DConUp = false;
+    DCwaiting = false;
+  }
+  // Button released
+  else if (buttonVal == HIGH && buttonLast == LOW && (millis() - downTime) > debounce) {
+    if (not ignoreUp) {
+      upTime = millis();
+      if (DConUp == false) DCwaiting = true;
+      else {
+        event = 2;
+        DConUp = false;
+        DCwaiting = false;
+        singleOK = false;
+      }
+    }
+  }
+  // Test for normal click event: DCgap expired
+  if ( buttonVal == HIGH && (millis() - upTime) >= DCgap && DCwaiting == true && DConUp == false && singleOK == true) {
+    event = 1;
+    DCwaiting = false;
+  }
+  // Test for hold
+  if (buttonVal == LOW && (millis() - downTime) >= holdTime) {
+    // Trigger "normal" hold
+    if (not holdEventPast) {
+      event = 3;
+      waitForUp = true;
+      ignoreUp = true;
+      DConUp = false;
+      DCwaiting = false;
+      //downTime = millis();
+      holdEventPast = true;
+    }
+    // Trigger "long" hold
+    if ((millis() - downTime) >= longHoldTime) {
+      if (not longHoldEventPast) {
+        event = 4;
+        longHoldEventPast = true;
+      }
+    }
+  }
+  buttonLast = buttonVal;
+  return event;
 }
