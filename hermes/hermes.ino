@@ -11,13 +11,13 @@
 #define RAIN_BRIGHTNESS 0.5
 
 /* Neopixel parameters: */
-#define LED_COUNT 144
+#define LED_COUNT 40
 #define DATA_PIN 6
 
 /* Animation parameters: */
 // ~15 ms minimum crawl speed for normal mode,
 // ~2 ms minimum for superfast hack mode.
-#define CRAWL_SPEED_MS 2
+#define CRAWL_SPEED_MS 5
 // General sensitivity of the animation.
 // Raising this raises the vector magnitude needed to reach max (purple),
 // and thus lowers sensitivity.
@@ -28,7 +28,7 @@
 // middle of the strip and crawling both ways.
 #define ENABLE_SPLIT_STRIP 1
 // Center LED, aka LED #0.
-#define SPLIT_STRIP_CENTER 72
+#define SPLIT_STRIP_CENTER 6
 
 /* Sleeping parameters: */
 #define SLEEP_BRIGHTNESS 0.30
@@ -53,7 +53,7 @@
 #define BUTTON_B_PIN 10
 /* Number of total animations: */
 #define NUMBER_OF_ANIMATIONS 3
-#define NUMBER_OF_SLEEP_ANIMATIONS 4
+#define NUMBER_OF_SLEEP_ANIMATIONS 2
 
 ///////////////////////////////////////////////////////////////////
 
@@ -120,10 +120,8 @@ void setup() {
   colorWipe(onboard_pixel.Color(0, 255, 0), 100); // Green
   colorWipe(onboard_pixel.Color(0, 0, 0), 100); // Red
 
-  // Setup 2 buttons
-  pinMode(BUTTON_A_PIN, INPUT_PULLUP);
-  pinMode(BUTTON_B_PIN, INPUT_PULLUP);
-
+//   Setup 1 button
+  pinMode(buttonPin, INPUT_PULLUP);
 }
 
 // Main loop
