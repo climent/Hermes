@@ -16,7 +16,7 @@
 #define RAIN_BRIGHTNESS 0.5
 
 /* Neopixel parameters: */
-#define LED_COUNT 40
+#define NUM_LEDS 40
 #define DATA_PIN 6
 
 /* Animation parameters: */
@@ -62,12 +62,19 @@
 
 
 CRGB onboard[1];
-CRGB strip[LED_COUNT];
+CRGB strip[NUM_LEDS];
+
+// Whether to show the blinking lead
+boolean blinker true;
 
 void setup() {
+  EVERY_N_MILLISECONDS( 100 ) {
+    blinker = !blinker;
+  }
+
   // Initialize the strips
   FastLED.addLeds<NEOPIXEL, ONBOARD_LED_NEOPIX>(onboard, 1);
-  FastLED.addLeds<NEOPIXEL, DATA_PIN>(strip, LED_COUNT);
+  FastLED.addLeds<NEOPIXEL, DATA_PIN>(strip, NUM_LEDS);
 
   // Initialize the button
   pinMode(BUTTON_PIN, INPUT_PULLUP);
@@ -77,98 +84,54 @@ void setup() {
   onboard[0] = CRGB::Blue;
   FastLED.show();
 
-  // Initialize the accelerometer and blink when we are done
+  // Initialize the accelerometer
   accelSetup();
   calibrate();
+
+  // Turn off the calibration pixel
+  onboard[0] = CRGB::Black;
+  FastLED.show();
 }
 
-///////////
-// accel //
-///////////
-
-Adafruit_LSM303 lsm; // Bridge to accelerometer hardware.
-AccelReading accelBuffer[10]; // Buffer for storing the last 10 readings.
-int bufferPosition; // Current read position of the buffer.
-
-double calibration; // Baseline for accelerometer data.
-unsigned long calibrationLEDTime;
-bool calibrationLEDOn;
-
-// For breathing, track the time of the last significant movement.
-unsigned long lastSignificantMovementTime;
-
-// Initialization.
-
-void accelSetup() {
-  lsm.begin();
-  bufferPosition = 0;
-
-  // Initialize the full buffer to zero.
-  for (int i = 0; i < bufferSize(); i++) {
-    accelBuffer[i].x = 0;
-    accelBuffer[i].y = 0;
-    accelBuffer[i].z = 0;
+void loop() {
+  EVERY_N_MILLISECONDS( 100 ) {
+    blinker = !blinker;
   }
-}
-
-void calibrate() {
-  calibration = 0;
-  calibrationLEDTime = 0;
-  calibrationLEDOn = false;
-
-  showCalibration();
-
-  while (1) {
-    // Update onboard LED.
-    unsigned long now = millis();
-    if (now - calibrationLEDTime > 250) {
-      calibrationLEDTime = now;
-      calibrationLEDOn = !calibrationLEDOn;
-      digitalWrite(ONBOARD_LED_PIN, calibrationLEDOn ? HIGH : LOW);
-      if (calibrationLEDOn) {
-        showCalibration();
-      } else {
-        showColorOff();
-      }
-    }
-
-    // Fill the buffer.
-    if (!fillBuffer()) {
-      delay(10);
-      continue;
-    }
-
-    // Check to see if we're done.
-    bool pass = true;
-    double avg = 0;
-    for (int i = 0; i < bufferSize(); i++) {
-      double m = getMagnitude(accelBuffer[i]);
-      pass = pass && (abs(m - calibration) < 10);
-      avg += m;
-    }
-
-    if (pass) {
+  accelPoll();
+  // put your main code here, to run repeatedly:
+  switch (f_animation) {
+    case 1:
+    case 2:
+      theaterChase(leds, NUM_LEDS, true);
       break;
-    } else {
-      avg /= bufferSize();
-      calibration = avg;
-    }
+    case 3:
+      theaterChase(leds, NUM_LEDS, false);
+      break;
+    case 4:
+      fill_rainbow(leds, NUM_LEDS, gHue, 5);
+      break;
+    case 100:
+      fadeToBlackBy(leds, NUM_LEDS, 5);
+      break;
   }
 
-  // Turn the calibration light off.
-  digitalWrite(ONBOARD_LED_PIN, LOW);
-}
-
-
-void blinky(uint8_t c, uint8_t gHue) {
-  for (int i = 1; i = c; i++) {
-    for (int j = 0; j < i ; j++) {
-      leds[j] = CHSV(gHue, 255, 192)
-    }
-    FastLED.show()
-
-    fadeToBlackBy(leds, NUM_LEDS, 1)
+  switch (b_animation) {
+    case 1:
+      break;
+    case 2:
+      break;
+    case 3:
+      break;
+    case 100:
+      fadeToBlackBy(leds, NUM_LEDS, 5);
+      break;
+    default:
+      break;
   }
+
+  FastLED.show();
+  buttons();
+
 }
 
 void buttons() {
