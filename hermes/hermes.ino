@@ -48,7 +48,7 @@
 #define ONBOARD_LED_NEOPIX 8 // Pin D8 has an LED connected on FLORA.
 
 /* Button parameters: */
-#define buttonPin 9 
+#define buttonPin 9
 #define BUTTON_A_PIN 9
 #define BUTTON_B_PIN 10
 /* Number of total animations: */
@@ -120,7 +120,7 @@ void setup() {
   colorWipe(onboard_pixel.Color(0, 255, 0), 100); // Green
   colorWipe(onboard_pixel.Color(0, 0, 0), 100); // Red
 
-//   Setup 1 button
+  //   Setup 1 button
   pinMode(buttonPin, INPUT_PULLUP);
 }
 
@@ -978,8 +978,8 @@ void buttons() {
     showButtonBType = 100;
     showType = 100;
   }
-//  buttonA();
-//  buttonB();
+  //  buttonA();
+  //  buttonB();
 }
 
 void breathe() {
