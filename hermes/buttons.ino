@@ -1,3 +1,7 @@
+/////////////
+// buttons //
+/////////////
+
 void buttons() {
   int b = checkButton();
   if (b == 1) {
@@ -17,8 +21,6 @@ void buttons() {
     showButtonBType = 100;
     showType = 100;
   }
-  //  buttonA();
-  //  buttonB();
 }
 
 

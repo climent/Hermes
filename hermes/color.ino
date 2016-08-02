@@ -1,6 +1,6 @@
-//////////////////
-// Color functions
-//////////////////
+/////////////////////
+// Color functions //
+/////////////////////
 
 void fadeToColor(uint32_t c, uint8_t wait) {
   boolean done true;
