@@ -2,6 +2,25 @@
 // Color functions
 //////////////////
 
+void fadeToColor(uint32_t c, uint8_t wait) {
+  boolean done true;
+  for (i = 0; i < NUM_LEDS, i++) {
+    done = true;
+    if (leds[i] != c) {
+      if (leds[i] > c) {
+        leds[i] -= 1;
+        done = false;
+      } else {
+        leds[i] += 1;
+        done = false
+      }
+    }
+    delay(wait);
+    
+  }
+  
+}
+
 // Fill the dots one after the other with a color
 void colorWipe(uint32_t c, uint8_t wait) {
   // TODO(): c is 32-bit color for Neopixel lib. We need to convert it to 0-255 values.
@@ -18,10 +37,73 @@ void blinky(uint8_t c, uint8_t gHue) {
       if (blinker) {
         leds[j] = CHSV(gHue, 255, 192);
       } else {
-        leds[j] = CRGB::Black;
+        fadeToBlackBy(leds, NUM_LEDS, 100);
       }
     }
     FastLED.show();
     delay(500);
   }
 }
+
+// "Crawls" the given color along the strip.
+// This always sets LED[0] to the given color.
+// After CRAWL_SPEED_MS milliseconds,
+// we set LED[n + 1] = LED[n] for each LED.
+void crawlColor(uint32_t color) {
+  // Set the head pixel to the new color.
+  uint32_t head = lightArray[0];
+  lightArray[0] = color;
+
+  unsigned long now = millis();
+
+  // Shift the array if it's been long enough since last shifting,
+  // or if a new color arrives.
+  bool shouldUpdate =
+    (now - lastCrawl > CRAWL_SPEED_MS)
+    || (color != head);
+
+  if (!shouldUpdate) {
+    return;
+  }
+
+  lastCrawl = now;
+
+  // Shift the array.
+  for (int i = LED_COUNT - 1; i > 0; --i) {
+    lightArray[i] = lightArray[i - 1];
+  }
+
+  if (ENABLE_SPLIT_STRIP) {
+    int centerLED = SPLIT_STRIP_CENTER;
+    int LEDsPerSide = floor(LED_COUNT / 2);
+
+    // Crawl 'low' side (center down)
+    uint32_t *pixelColor = lightArray;
+    for (int led = centerLED - 1; led >= centerLED - 1 - LEDsPerSide; led--) {
+      strip.setPixelColor(constrainBetween(led, 0, LED_COUNT - 1), *pixelColor++);
+    }
+
+    // Crawl 'high' side (center up)
+    pixelColor = lightArray;
+    for (int led = centerLED; led < centerLED + LEDsPerSide; led++) {
+      strip.setPixelColor(constrainBetween(led, 0, LED_COUNT - 1), *pixelColor++);
+    }
+    stripShow();
+    return;
+  }
+
+  for (int i = 0; i < LED_COUNT; i++) {
+    strip.setPixelColor(i, lightArray[i]);
+  }
+  stripShow();
+}
+
+int constrainBetween(int value, int lower, int higher) {
+  if (value < lower) {
+    value = higher - (lower - value) + 1;
+  } else if (value > higher) {
+    value = lower + (value - higher) - 1;
+  }
+  return value;
+}
+

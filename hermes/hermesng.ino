@@ -66,12 +66,10 @@ CRGB strip[NUM_LEDS];
 
 // Whether to show the blinking lead
 boolean blinker true;
+uint8_t gHue = 0;
+uint8_t chase = 0;
 
 void setup() {
-  EVERY_N_MILLISECONDS( 100 ) {
-    blinker = !blinker;
-  }
-
   // Initialize the strips
   FastLED.addLeds<NEOPIXEL, ONBOARD_LED_NEOPIX>(onboard, 1);
   FastLED.addLeds<NEOPIXEL, DATA_PIN>(strip, NUM_LEDS);
@@ -97,6 +95,16 @@ void loop() {
   EVERY_N_MILLISECONDS( 100 ) {
     blinker = !blinker;
   }
+  EVERY_N_MILLISECONDS( 20 ) {
+    gHue++;  // slowly cycle the "base color" through the rainbow
+  }
+  EVERY_N_MILLISECONDS( 100 ) {
+    chase++;
+    if (chase == 3) {
+      chase = 0;
+    }
+  }
+
   accelPoll();
   // put your main code here, to run repeatedly:
   switch (f_animation) {
@@ -134,115 +142,6 @@ void loop() {
 
 }
 
-void buttons() {
-  int b = checkButton();
-  if (b == 1) {
-    showType++;
-    if (showType > NUMBER_OF_SLEEP_ANIMATIONS)
-      showType = 1;
-    blinky(showType, 255);
-  }
-
-  if (b == 2) {
-    showButtonBType++;
-    if (showButtonBType > NUMBER_OF_ANIMATIONS)
-      showButtonBType = 1;
-    blinky(showType, 255);
-  }
-  if (b == 3 || b == 4) {
-    showButtonBType = 100;
-    showType = 100;
-  }
-  //  buttonA();
-  //  buttonB();
-}
 
 
-/*
-  MULTI-CLICK: One Button, Multiple Events
 
-  Oct 12, 2009
-  Run checkButton() to retrieve a button event:
-  Click
-  Double-Click
-  Hold
-  Long Hold
-*/
-
-// Button timing variables
-int debounce = 20; // ms debounce period to prevent flickering when pressing or releasing the button
-int DCgap = 250; // max ms between clicks for a double click event
-int holdTime = 2000; // ms hold period: how long to wait for press+hold event
-int longHoldTime = 5000; // ms long hold period: how long to wait for press+hold event
-
-// Other button variables
-boolean buttonVal = HIGH; // value read from button
-boolean buttonLast = HIGH; // buffered value of the button's previous state
-boolean DCwaiting = false; // whether we're waiting for a double click (down)
-boolean DConUp = false; // whether to register a double click on next release, or whether to wait and click
-boolean singleOK = true; // whether it's OK to do a single click
-long downTime = -1; // time the button was pressed down
-long upTime = -1; // time the button was released
-boolean ignoreUp = false; // whether to ignore the button release because the click+hold was triggered
-boolean waitForUp = false; // when held, whether to wait for the up event
-boolean holdEventPast = false; // whether or not the hold event happened already
-boolean longHoldEventPast = false;// whether or not the long hold event happened already
-
-int checkButton()
-{
-  int event = 0;
-  // Read the state of the button
-  buttonVal = digitalRead(buttonPin);
-  // Button pressed down
-  if (buttonVal == LOW && buttonLast == HIGH && (millis() - upTime) > debounce) {
-    downTime = millis();
-    ignoreUp = false;
-    waitForUp = false;
-    singleOK = true;
-    holdEventPast = false;
-    longHoldEventPast = false;
-    if ((millis() - upTime) < DCgap && DConUp == false && DCwaiting == true) DConUp = true;
-    else DConUp = false;
-    DCwaiting = false;
-  }
-  // Button released
-  else if (buttonVal == HIGH && buttonLast == LOW && (millis() - downTime) > debounce) {
-    if (not ignoreUp) {
-      upTime = millis();
-      if (DConUp == false) DCwaiting = true;
-      else {
-        event = 2;
-        DConUp = false;
-        DCwaiting = false;
-        singleOK = false;
-      }
-    }
-  }
-  // Test for normal click event: DCgap expired
-  if ( buttonVal == HIGH && (millis() - upTime) >= DCgap && DCwaiting == true && DConUp == false && singleOK == true) {
-    event = 1;
-    DCwaiting = false;
-  }
-  // Test for hold
-  if (buttonVal == LOW && (millis() - downTime) >= holdTime) {
-    // Trigger "normal" hold
-    if (not holdEventPast) {
-      event = 3;
-      waitForUp = true;
-      ignoreUp = true;
-      DConUp = false;
-      DCwaiting = false;
-      //downTime = millis();
-      holdEventPast = true;
-    }
-    // Trigger "long" hold
-    if ((millis() - downTime) >= longHoldTime) {
-      if (not longHoldEventPast) {
-        event = 4;
-        longHoldEventPast = true;
-      }
-    }
-  }
-  buttonLast = buttonVal;
-  return event;
-}
