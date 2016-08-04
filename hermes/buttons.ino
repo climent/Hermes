@@ -2,24 +2,28 @@
 // buttons //
 /////////////
 
+
+int a_animation = 1;
+int b_animation = 1;
+
 void buttons() {
   int b = checkButton();
   if (b == 1) {
-    showType++;
-    if (showType > NUMBER_OF_SLEEP_ANIMATIONS)
-      showType = 1;
-    blinky(showType, 255);
+    a_animation++;
+    if (a_animation > A_ANIMATIONS)
+      a_animation = 1;
+    blinky(a_animation, 255);
   }
 
   if (b == 2) {
-    showButtonBType++;
-    if (showButtonBType > NUMBER_OF_ANIMATIONS)
-      showButtonBType = 1;
-    blinky(showType, 255);
+    b_animation++;
+    if (b_animation > B_ANIMATIONS)
+      b_animation = 1;
+    blinky(b_animation, 255);
   }
   if (b == 3 || b == 4) {
-    showButtonBType = 100;
-    showType = 100;
+    a_animation = 100;
+    b_animation = 100;
   }
 }
 

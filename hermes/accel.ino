@@ -2,6 +2,8 @@
 // accel //
 ///////////
 
+#include "AccelReading.h"
+
 Adafruit_LSM303 lsm; // Bridge to accelerometer hardware.
 AccelReading accelBuffer[10]; // Buffer for storing the last 10 readings.
 int bufferPosition; // Current read position of the buffer.

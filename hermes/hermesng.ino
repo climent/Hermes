@@ -3,7 +3,7 @@
 
 // Accel imports.
 #include <Wire.h>
-#include <Adafruit_LSM303_Old.h>
+#include <Adafruit_LSM303.h>
 
 // Our custom data type.
 #include "AccelReading.h"
@@ -56,9 +56,7 @@
 #define buttonPin 9
 #define BUTTON_A_PIN 9
 #define BUTTON_B_PIN 10
-/* Number of total animations: */
-#define NUMBER_OF_ANIMATIONS 3
-#define NUMBER_OF_SLEEP_ANIMATIONS 2
+
 
 
 CRGB onboard[1];
@@ -91,14 +89,27 @@ void setup() {
   FastLED.show();
 }
 
+/* Number of total animations: */
+#define A_ANIMATIONS 3
+#define B_ANIMATIONS 2
+
+int fadeout = 0;
+int fadein = 0;
+
 void loop() {
-  EVERY_N_MILLISECONDS( 100 ) {
-    blinker = !blinker;
-  }
   EVERY_N_MILLISECONDS( 20 ) {
     gHue++;  // slowly cycle the "base color" through the rainbow
   }
   EVERY_N_MILLISECONDS( 100 ) {
+    blinker = !blinker;
+    fadeout--;
+    if (fadeout < 0) {
+      fadeout = 0;
+    };
+    fadein++;
+    if (fadein > 255) {
+      fadein = 255;
+    };
     chase++;
     if (chase == 3) {
       chase = 0;
@@ -106,9 +117,31 @@ void loop() {
   }
 
   accelPoll();
-  // put your main code here, to run repeatedly:
-  switch (f_animation) {
+  updateLEDs();
+  FastLED.show();
+  buttons();
+}
+
+void updateLEDs() {
+  // Largest vector needed to hit max color (1.0).
+  double upperBound = HERMES_SENSITIVITY;
+  double magnitude = getMagnitude(getCurrentReading());
+
+  if (!sleep(magnitude)) {
+    showAnimation(a_animation);
+  } else {
+    double normalizedVector = abs(calibration - magnitude);
+    double scale = normalizedVector / upperBound;
+    uint32_t pixelColor = pixelColorForScale(scale);
+    showSleep(b_animation);
+  }
+}
+
+void showAnimation(int a_animation) {
+  switch (a_animation) {
     case 1:
+      theaterChase(leds, NUM_LEDS, true);
+      break;
     case 2:
       theaterChase(leds, NUM_LEDS, true);
       break;
@@ -122,7 +155,9 @@ void loop() {
       fadeToBlackBy(leds, NUM_LEDS, 5);
       break;
   }
+}
 
+void showSleep(int b_animation) {
   switch (b_animation) {
     case 1:
       break;
@@ -136,12 +171,4 @@ void loop() {
     default:
       break;
   }
-
-  FastLED.show();
-  buttons();
-
 }
-
-
-
-

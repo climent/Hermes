@@ -16,9 +16,7 @@ void fadeToColor(uint32_t c, uint8_t wait) {
       }
     }
     delay(wait);
-    
   }
-  
 }
 
 // Fill the dots one after the other with a color
@@ -105,5 +103,34 @@ int constrainBetween(int value, int lower, int higher) {
     value = lower + (value - higher) - 1;
   }
   return value;
+}
+
+void theaterChase(CRGB* leds, uint8_t num_leds, bool rainbow) {
+  for (int i = 0; i < num_leds; i = i + 3) {
+    if (i + cycle < num_leds) {
+      if (rainbow == true) {
+        leds[i + cycle] = CHSV(gHue + i, 255, 192);
+      } else {
+        leds[i + cycle] = CRGB::White;
+      }
+    }
+    if (i + cycle - 1 >= 0 && i + cycle - 1 < num_leds ) {
+      leds[i + cycle - 1] = CRGB::Black;
+    }
+    if (i + cycle - 2 >= 0 && i + cycle - 2 < num_leds ) {
+      leds[i + cycle - 2] = CRGB::Black;
+    }
+  }
+}
+
+// Returns a pixel color for use by strip.setPixelColor().
+// Automatically adjusts brightness.
+// Takes a scale, from 0.0 to 1.0, indicating progression
+// through the color rainbow.
+uint32_t pixelColorForScale(double scale) {
+  float brightness = MAX_BRIGHTNESS * (scale + MIN_BRIGHTNESS);
+  int c = COLOR_RANGE * scale; // Intentionally round to an int.
+
+  return color(c, brightness);
 }
 
